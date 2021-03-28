@@ -744,12 +744,22 @@ void PositionalLineEdits::keyPressEvent(QKeyEvent* keyEvent){
 
     }else if(key == Qt::Key_Backspace){
 
-        setValueForIndex("0", this->cursorPosition());
+        if(setValueForIndex("0", this->cursorPosition())){
+
+            m_undisplayedPrecision = 0.0;
+
+        }
+
         seekLeft();
 
     }else if(key == Qt::Key_Delete){
 
-        setValueForIndex("0", this->cursorPosition());
+        if(setValueForIndex("0", this->cursorPosition())){
+
+            m_undisplayedPrecision = 0.0;
+
+        }
+
         seekRight();
 
     }else if(keyEvent->matches(QKeySequence::Copy)){
