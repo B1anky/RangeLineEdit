@@ -14,7 +14,9 @@ Range::Range()
       m_rightRange    (nullptr),
       m_dirty         (false)
 {
+
     /* NOP */
+
 }
 
 Range::~Range(){
