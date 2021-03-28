@@ -1,7 +1,7 @@
 #ifndef LONGITUDELINEEDIT_H
 #define LONGITUDELINEEDIT_H
 
-#include "PositionalLineEdits.h"
+#include "PositionalLineEdit.h"
 
 class LongitudeLineEdit : public PositionalLineEdits{
 
