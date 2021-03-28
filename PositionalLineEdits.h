@@ -4,108 +4,15 @@
 #include <QLineEdit>
 #include <QPointer>
 
+class Range;
+class RangeChar;
+class RangeInt;
+class RangeStringConstant;
+
 class TrianglePaintedButton;
 class QPushButton;
 class QMenu;
-
-struct RangeInt;
-
-/*
- * Think of the RangeInfo as like a node.
- * When we're in the confines of a node, they
- * have their own indexing style and validation rules.
- * For example, the degrees for latitude only allow
- * S90 to N90.
- */
-struct Range{
-
-    Range();
-    virtual ~Range();
-
-    virtual bool      increment(int index) = 0;
-    virtual bool      decrement(int index) = 0;
-    virtual int       valueLength()  = 0;
-    virtual int       rangeLength()  = 0;
-    virtual QString   valueStr()     = 0;
-    virtual QString   rangeType()    = 0;
-    virtual int       divisor()      = 0;
-    virtual bool      setValueForIndex(const QString& value, int index) = 0;
-    virtual Range*    leftMostRange();
-    virtual RangeInt* leftMostRangeInt();
-    virtual bool      allValuesToLeftAreZero();
-    virtual bool      leftMostRangeCharSign();
-
-    //The index determines at what string location this range begins
-    //(i.e. charIndex 0 for N/S or E/W, charIndex 1 for Degrees)
-    int    m_charIndexStart;
-    int    m_charIndexEnd;
-    Range* m_leftRange;
-    Range* m_rightRange;
-
-    bool   m_dirty;
-
-};
-
-struct RangeChar : public Range{
-
-    RangeChar(QChar negativeChar, QChar positiveChar);
-    void setRange(QChar negativeChar, QChar positiveChar);
-
-    bool    increment   (int index = 0) override;
-    bool    decrement   (int index = 0) override;
-    int     valueLength()  override;
-    int     rangeLength()  override;
-    QString valueStr()     override;
-    QString rangeType()    override;
-    int     divisor()      override;
-    bool    setValueForIndex(const QString& value, int index) override;
-
-    QChar m_negativeChar;
-    QChar m_positiveChar;
-    QChar m_value;
-
-};
-
-/*
- * Used for constant strings that should be immutable
- */
-struct RangeStringConstant : public Range{
-
-    RangeStringConstant(QString stringPlaceHolder);
-
-    bool    increment   (int index = 0) override;
-    bool    decrement   (int index = 0) override;
-    int     valueLength() override;
-    int     rangeLength() override;
-    QString valueStr()    override;
-    QString rangeType()   override;
-    int     divisor()      override;
-    bool    setValueForIndex(const QString& value, int index) override;
-
-    QString m_value;
-
-};
-
-struct RangeInt : public Range{
-
-    RangeInt(int range, int divisor);
-    void setRange(int range);
-    void setDivisor(int divisor);
-
-    bool    increment   (int index) override;
-    bool    decrement   (int index) override;
-    int     valueLength()  override;
-    int     rangeLength()  override;
-    QString valueStr()     override;
-    QString rangeType()    override;
-    int     divisor()      override;
-    bool    setValueForIndex(const QString& value, int index) override;
-
-    int m_range;
-    int m_value;
-    int m_divisor;
-
-};
+class QAction;
 
 class PositionalLineEdits : public QLineEdit{
 
@@ -133,13 +40,15 @@ public:
 
     void setTextFromDecimalValue(double decimalDegrees);
 
+    void setActiveIndexHighlightColor(const QColor& highlightColor, bool implicitlyMakeSemiTransparent = true);
+
 protected:
 
     void setupIncrementAndDecrementButtons();
 
     void createCustomContextMenu();
 
-    Range* findAdjacentNonStringConstantRange(Range* range, bool leftRange);
+    Range* findAdjacentNonStringConstantRange(Range* range, bool seekLeftRange);
 
     Range* getRangeForIndex(int index);
 
@@ -169,6 +78,8 @@ protected slots:
 
     void keyPressEvent(QKeyEvent* keyEvent) override;
 
+    void focusInEvent(QFocusEvent* focusEvent) override;
+
     void focusOutEvent(QFocusEvent* focusEvent) override;
 
     void paintEvent(QPaintEvent* paintEvent) override;
@@ -187,26 +98,28 @@ protected slots:
 
     void copyDecimalToClipboard();
 
+    void pasteAsDecimalFromClipboard();
+
     void clearText();
 
 public:
-
-    Type m_type;
 
     QList<Range*> m_ranges;
 
     //This determines if m_decimals should exist
     int       m_decimals;
-    RangeInt* m_decimalRange;
     double    m_undisplayedPrecision;
-    int       m_maxAllowableValue;
-    bool      m_showFocusFromButtonHovering;
+    int       m_maxAllowableValue;    
     int       m_prevCursorPosition;
 
     QPointer<TrianglePaintedButton> m_incrementButton;
     QPointer<TrianglePaintedButton> m_decrementButton;
 
-    QPointer<QMenu>       m_customContextMenu;
+    QPointer<QMenu> m_customContextMenu;
+    QAction*        m_copyAsTextToClipBoardAction;
+    QAction*        m_copyAsDecimalToClipBoardAction;
+    QAction*        m_pasteAsDecimalFromClipBoardAction;
+    QAction*        m_clearAction;
 
     RangeChar*           m_degreeChar;
     RangeInt*            m_degreeInt;
@@ -215,6 +128,9 @@ public:
     RangeStringConstant* m_minuteSymbol;
     RangeInt*            m_secondsInt;
     RangeStringConstant* m_secondSymbol;
+    RangeInt*            m_decimalRange;
+
+    QColor               m_highlightColor;
 
 };
 

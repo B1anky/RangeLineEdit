@@ -1,10 +1,11 @@
 #include "LatitudeLineEdit.h"
+#include "TrianglePaintedButton.h"
+#include "Ranges.h"
 
 LatitudeLineEdit::LatitudeLineEdit(int decimals, QWidget* parent)
     : PositionalLineEdits(parent)
 {
 
-    m_type = PositionalLineEdits::Type::LATITUDE;
     m_degreeChar   = new RangeChar('S', 'N');
     m_degreeInt    = new RangeInt(90, 1);
     m_degreeSymbol = new RangeStringConstant("°");
@@ -17,9 +18,10 @@ LatitudeLineEdit::LatitudeLineEdit(int decimals, QWidget* parent)
     m_prevCursorPosition = 0;
     syncRangeEdges();
 
-    m_maxAllowableValue = 90;
+    m_maxAllowableValue = m_degreeInt->m_range;
     setPrecision(decimals);
 
     setCursorPosition(0);
+    setMinimumWidth(QFontMetrics(font()).horizontalAdvance(text()) + m_incrementButton->width());
 
 }

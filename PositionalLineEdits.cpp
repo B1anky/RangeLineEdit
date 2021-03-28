@@ -1,5 +1,7 @@
 #include "PositionalLineEdits.h"
+#include "Ranges.h"
 #include "TrianglePaintedButton.h"
+
 #include <QKeyEvent>
 #include <QFocusEvent>
 #include <QPaintEvent>
@@ -11,41 +13,49 @@
 #include <QAction>
 #include <QClipboard>
 #include <QGuiApplication>
+
 #include <cmath>
 #include <iostream>
 
 PositionalLineEdits::PositionalLineEdits(QWidget* parent)
-    : QLineEdit                    (parent),
-      m_type                       (INVALID),
-      m_ranges                     ({}),
-      m_decimals                   (-1),
-      m_decimalRange               (nullptr),
-      m_undisplayedPrecision       (0.0),
-      m_maxAllowableValue          (0),
-      m_showFocusFromButtonHovering(false),
-      m_prevCursorPosition         (0),
-      m_incrementButton            (nullptr),
-      m_decrementButton            (nullptr),
-      m_customContextMenu          (nullptr),
-      m_degreeChar                 (nullptr),
-      m_degreeInt                  (nullptr),
-      m_degreeSymbol               (nullptr),
-      m_minuteInt                  (nullptr),
-      m_minuteSymbol               (nullptr),
-      m_secondsInt                 (nullptr),
-      m_secondSymbol               (nullptr)
+    : QLineEdit                          (parent),
+      m_ranges                           ({}),
+      m_decimals                         (-1),
+      m_undisplayedPrecision             (0.0),
+      m_maxAllowableValue                (0),
+      m_prevCursorPosition               (0),
+      m_incrementButton                  (nullptr),
+      m_decrementButton                  (nullptr),
+      m_customContextMenu                (nullptr),
+      m_copyAsTextToClipBoardAction      (nullptr),
+      m_copyAsDecimalToClipBoardAction   (nullptr),
+      m_pasteAsDecimalFromClipBoardAction(nullptr),
+      m_clearAction                      (nullptr),
+      m_degreeChar                       (nullptr),
+      m_degreeInt                        (nullptr),
+      m_degreeSymbol                     (nullptr),
+      m_minuteInt                        (nullptr),
+      m_minuteSymbol                     (nullptr),
+      m_secondsInt                       (nullptr),
+      m_secondSymbol                     (nullptr),
+      m_decimalRange                     (nullptr),
+      m_highlightColor                   (QColor(128, 128, 128, 75))
 {
+
     setMouseTracking(true);
     setupIncrementAndDecrementButtons();
     createCustomContextMenu();
+
     connect(this, &PositionalLineEdits::cursorPositionChanged,      this, &PositionalLineEdits::cursorPositionChangedEvent, Qt::DirectConnection);
     connect(this, &PositionalLineEdits::selectionChanged,           this, &PositionalLineEdits::selectionChangedEvent,      Qt::DirectConnection);
     connect(this, &PositionalLineEdits::customContextMenuRequested, this, &PositionalLineEdits::showContextMenu,            Qt::DirectConnection);
+
 }
 
-PositionalLineEdits::~PositionalLineEdits()
-{
+PositionalLineEdits::~PositionalLineEdits(){
+
     clearCurrentValidators();
+
 }
 
 void PositionalLineEdits::setupIncrementAndDecrementButtons(){
@@ -53,6 +63,9 @@ void PositionalLineEdits::setupIncrementAndDecrementButtons(){
     //Production::Note: It doesn't looks like the inverse character, but it appears properly
     m_incrementButton = new TrianglePaintedButton(TrianglePaintedButton::Direction::UP,   this);
     m_decrementButton = new TrianglePaintedButton(TrianglePaintedButton::Direction::DOWN, this);
+
+    m_incrementButton->setMinimumWidth(15);
+    m_decrementButton->setMinimumWidth(15);
 
     m_incrementButton->setMaximumWidth(25);
     m_decrementButton->setMaximumWidth(25);
@@ -70,13 +83,15 @@ void PositionalLineEdits::createCustomContextMenu(){
     setContextMenuPolicy(Qt::CustomContextMenu);
     m_customContextMenu = new QMenu(this);
 
-    QAction* copyAsTextToClipBoardAction    = m_customContextMenu->addAction("Copy [text]");
-    QAction* copyAsDecimalToClipBoardAction = m_customContextMenu->addAction("Copy [decimal]");
-    QAction* clearAction                    = m_customContextMenu->addAction("Clear");
+    m_copyAsTextToClipBoardAction       = m_customContextMenu->addAction("Copy  [As text]");
+    m_copyAsDecimalToClipBoardAction    = m_customContextMenu->addAction("Copy  [As decimal]");
+    m_pasteAsDecimalFromClipBoardAction = m_customContextMenu->addAction("Paste [From decimal]");
+    m_clearAction                       = m_customContextMenu->addAction("Clear");
 
-    connect(copyAsTextToClipBoardAction,    &QAction::triggered, this, &PositionalLineEdits::copyTextToClipboard,    Qt::DirectConnection);
-    connect(copyAsDecimalToClipBoardAction, &QAction::triggered, this, &PositionalLineEdits::copyDecimalToClipboard, Qt::DirectConnection);
-    connect(clearAction,                    &QAction::triggered, this, &PositionalLineEdits::clearText,              Qt::DirectConnection);
+    connect(m_copyAsTextToClipBoardAction,       &QAction::triggered, this, &PositionalLineEdits::copyTextToClipboard,         Qt::DirectConnection);
+    connect(m_copyAsDecimalToClipBoardAction,    &QAction::triggered, this, &PositionalLineEdits::copyDecimalToClipboard,      Qt::DirectConnection);
+    connect(m_pasteAsDecimalFromClipBoardAction, &QAction::triggered, this, &PositionalLineEdits::pasteAsDecimalFromClipboard, Qt::DirectConnection);
+    connect(m_clearAction,                       &QAction::triggered, this, &PositionalLineEdits::clearText,                   Qt::DirectConnection);
 
 }
 
@@ -96,7 +111,24 @@ void PositionalLineEdits::copyDecimalToClipboard(){
     QClipboard* clipboard = QGuiApplication::clipboard();
     if(clipboard != nullptr){
 
-        clipboard->setText(QString::number(sumRangeInts(), 'f', m_decimals));
+        clipboard->setText(QString::number(textToDecimalValue(), 'f', m_decimals));
+
+    }
+
+}
+
+void PositionalLineEdits::pasteAsDecimalFromClipboard(){
+
+    QClipboard* clipboard = QGuiApplication::clipboard();
+    if(clipboard != nullptr){
+
+        bool isDecimal(false);
+        double clipboardAsDouble = clipboard->text().toDouble(&isDecimal);
+        if(isDecimal){
+
+            setTextFromDecimalValue(clipboardAsDouble);
+
+        }
 
     }
 
@@ -125,8 +157,7 @@ void PositionalLineEdits::clearText(){
 
 }
 
-void PositionalLineEdits::setPrecision(int decimals)
-{
+void PositionalLineEdits::setPrecision(int decimals){
 
     if(m_decimals != decimals && decimals >= 0){
 
@@ -160,8 +191,7 @@ void PositionalLineEdits::setPrecision(int decimals)
 
 }
 
-bool PositionalLineEdits::setValueForIndex(QString value, int index)
-{
+bool PositionalLineEdits::setValueForIndex(QString value, int index){
 
     bool valueWasSet = false;
     Range* range = getRangeForIndex(index);
@@ -183,15 +213,14 @@ bool PositionalLineEdits::setValueForIndex(QString value, int index)
 
 }
 
-double PositionalLineEdits::textToDecimalValue()
-{
+double PositionalLineEdits::textToDecimalValue(){
 
+    //Production::Note: This is what ensures we don't lose precision when scraping the decimal value
     return sumRangeInts() + m_undisplayedPrecision;
 
 }
 
-void PositionalLineEdits::setTextFromDecimalValue(double decimalDegrees)
-{
+void PositionalLineEdits::setTextFromDecimalValue(double decimalDegrees){
 
     QChar signChar = decimalDegrees >= 0 ? m_degreeChar->m_positiveChar : m_degreeChar->m_negativeChar;
     m_degreeChar->m_value = signChar;
@@ -199,7 +228,9 @@ void PositionalLineEdits::setTextFromDecimalValue(double decimalDegrees)
     decimalDegrees = std::fabs(decimalDegrees);
 
     if(decimalDegrees > m_maxAllowableValue){
+
         decimalDegrees = m_maxAllowableValue;
+
     }
 
     double degrees                    = std::floor(decimalDegrees);
@@ -207,6 +238,7 @@ void PositionalLineEdits::setTextFromDecimalValue(double decimalDegrees)
     double minutes                    = std::floor(minutesNotTruncated);
     double secondsNotTruncated        = (minutesNotTruncated - minutes) * 60.0;
     double seconds                    = std::floor(secondsNotTruncated);
+    //Production::Note: m_decimalRange->m_range == std::pow(10, m_decimals) - 1, so we need to divide cleanly by 10, 100, 1000, etc., not 9, 99, 999
     double decimalSecondsNotTruncated = (secondsNotTruncated - seconds) * (m_decimalRange->m_range + 1.0);
     double decimalSeconds             = std::floor(decimalSecondsNotTruncated);
 
@@ -220,14 +252,20 @@ void PositionalLineEdits::setTextFromDecimalValue(double decimalDegrees)
     m_decimalRange->m_value = decimalSeconds;
     m_undisplayedPrecision  = decimalDegrees - sumRangeInts();
 
-    //Production::Note: The below episolon scaled with how many decimals are being used
+    //Production::Note: The below episolon scales with how many decimals are being used, so it's completely dynamic
     const double minimumDecimalValue(1.0 / (3600.0 * (m_decimalRange->m_range + 1.0)));
     const double epsilonErrorAllowed(minimumDecimalValue / 10.0);
 
     if(m_undisplayedPrecision > epsilonErrorAllowed){
 
+        //Production::Note: If we found enough error to be greater than the epsilon,
+        //that implies we SHOULD have incremented one more time,
+        //but because doubles and floats are sometimes imprecise during arithmetic operations with certain values,
+        //it erroneously floored an extra decimal value.
+        //If we can increment the decimal range it should fix up any visual desync occurring from being off by 1 decimal.
         if(m_decimalRange->increment(0)){
 
+            //We also need to remove from the undisplayed precision the amount we were able to increment by (Brings is closer to 0)
             m_undisplayedPrecision -= minimumDecimalValue;
 
         }
@@ -239,39 +277,57 @@ void PositionalLineEdits::setTextFromDecimalValue(double decimalDegrees)
 
 }
 
-Range* PositionalLineEdits::findAdjacentNonStringConstantRange(Range* range, bool leftRange)
-{
+void PositionalLineEdits::setActiveIndexHighlightColor(const QColor& highlightColor, bool implicitlyMakeSemiTransparent){
+
+    if(highlightColor.isValid()){
+
+        m_highlightColor = highlightColor;
+
+        //This will make it so a user could, for example use Qt::red, Qt::blue, Qt::green, etc.,
+        //and it'll automatically make it semi-transparent without multiple lines of code on their part
+        if(implicitlyMakeSemiTransparent){
+
+            m_highlightColor.setAlpha(75);
+
+        }
+
+    }
+
+}
+
+Range* PositionalLineEdits::findAdjacentNonStringConstantRange(Range* range, bool seekLeftRange){
 
     Range* adjacentRange(nullptr);
     int iterInd(0);
 
-    //Seek left
-    if(leftRange){
+    if(seekLeftRange){
 
         iterInd = m_ranges.indexOf(range) - 1;
 
         while(iterInd > 0){
 
             if(m_ranges.at(iterInd)->rangeType() != "RangeStringConstant"){
+
                 adjacentRange = m_ranges.at(iterInd);
                 break;
+
             }
 
             --iterInd;
 
         }
 
-    }
-    //Seek right
-    else{
+    }else{
 
         iterInd = m_ranges.indexOf(range) + 1;
 
         while(iterInd < m_ranges.size()){
 
             if(m_ranges.at(iterInd)->rangeType() != "RangeStringConstant"){
+
                 adjacentRange = m_ranges.at(iterInd);
                 break;
+
             }
 
             ++iterInd;
@@ -309,8 +365,7 @@ Range* PositionalLineEdits::getRangeForIndex(int index){
 
 }
 
-void PositionalLineEdits::clearCurrentValidators()
-{
+void PositionalLineEdits::clearCurrentValidators(){
 
     foreach(Range* range, m_ranges){
 
@@ -338,8 +393,14 @@ void PositionalLineEdits::clearCurrentValidators()
 
     m_ranges.clear();
 
-    //Should've been deleted in the above loop, but let's make sure anyway
-    m_decimalRange = nullptr;
+    //Ensures everything is properly not pointing to deleted memory
+    m_degreeChar   = nullptr;
+    m_degreeInt    = nullptr;
+    m_degreeSymbol = nullptr;
+    m_minuteInt    = nullptr;
+    m_minuteSymbol = nullptr;
+    m_secondsInt   = nullptr;
+    m_secondSymbol = nullptr;
 
 }
 
@@ -366,60 +427,72 @@ void PositionalLineEdits::syncRangeEdges(){
 
     //Now clean up the last indice's ranges and left range value
     if(m_ranges.size() >= 2){
+
         m_ranges.last()->m_leftRange = m_ranges.at(m_ranges.size() - 2);
         m_ranges.last()->m_charIndexStart = curRangeOffset;
+
         curRangeOffset += m_ranges.last()->rangeLength();
+
         m_ranges.last()->m_charIndexEnd = curRangeOffset - 1;
         m_ranges.last()->m_dirty = true;
+
     }
 
     scrapeDirtiedRanges();
 
 }
 
-void PositionalLineEdits::increment()
-{
-    //int focusIndex = this->cursorPosition();
-    int focusIndex = m_prevCursorPosition;
+void PositionalLineEdits::increment(){    
 
-    //Check if this the position that belongs to a Range
-    Range* range = getRangeForIndex(focusIndex);
-    int localRangeIndex = range->m_charIndexEnd - focusIndex;
+    //Check if this position belongs to a valid Range
+    Range* range = getRangeForIndex(m_prevCursorPosition);
 
-    if(range != nullptr && (range->rangeType() != "RangeStringConstant") ){
+    if(range != nullptr){
 
-        range->increment(localRangeIndex);
-        syncRangeSigns();
-        maximumExceededFixup();
-        scrapeDirtiedRanges();
-        setCursorPosition(focusIndex);
+        int localRangeIndex = range->m_charIndexEnd - m_prevCursorPosition;
 
-    }
+        if(range->rangeType() != "RangeStringConstant"){
 
-}
+            range->increment(localRangeIndex);
 
-void PositionalLineEdits::decrement()
-{
-    int focusIndex = m_prevCursorPosition;
+            syncRangeSigns();
+            maximumExceededFixup();
+            scrapeDirtiedRanges();
 
-    //Check if this the position that belongs to a Range
-    Range* range = getRangeForIndex(focusIndex);
-    int localRangeIndex = range->m_charIndexEnd - focusIndex;
+            setCursorPosition(m_prevCursorPosition);
 
-    if(range != nullptr && (range->rangeType() != "RangeStringConstant") ){
-
-        range->decrement(localRangeIndex);
-        syncRangeSigns();
-        maximumExceededFixup();
-        scrapeDirtiedRanges();
-        setCursorPosition(focusIndex);
+        }
 
     }
 
 }
 
-void PositionalLineEdits::seekLeft()
-{
+void PositionalLineEdits::decrement(){       
+
+    //Check if this position belongs to a valid Range
+    Range* range = getRangeForIndex(m_prevCursorPosition);
+
+    if(range != nullptr){
+
+        int localRangeIndex = range->m_charIndexEnd - m_prevCursorPosition;
+
+        if(range->rangeType() != "RangeStringConstant"){
+
+            range->decrement(localRangeIndex);
+
+            syncRangeSigns();
+            maximumExceededFixup();
+            scrapeDirtiedRanges();
+
+            setCursorPosition(m_prevCursorPosition);
+
+        }
+
+    }
+
+}
+
+void PositionalLineEdits::seekLeft(){
 
     int focusIndex = this->cursorPosition();
 
@@ -429,7 +502,7 @@ void PositionalLineEdits::seekLeft()
         //Assume this is valid and prove otherwise below
         int newCursorPosition = focusIndex - 1;
 
-        //Check which Range belongs to the current cursor positions
+        //Check which Range belongs to the current cursor position
         Range* range = getRangeForIndex(focusIndex);
 
         if(range != nullptr){
@@ -455,21 +528,20 @@ void PositionalLineEdits::seekLeft()
 
 }
 
-void PositionalLineEdits::seekRight()
-{
+void PositionalLineEdits::seekRight(){
 
     int focusIndex = this->cursorPosition();
 
     //No point to move right if we're at the end
     if(focusIndex < this->text().length()){
 
-        //Check if this the position that belongs to a Range
+        //Assume this is valid and prove otherwise below
+        int newCursorPosition = focusIndex + 1;
+
+        //Check which Range belongs to the current cursor position
         Range* range = getRangeForIndex(focusIndex);
 
         if(range != nullptr){
-
-            //Assume this is valid
-            int newCursorPosition = focusIndex + 1;
 
             if(newCursorPosition > range->m_charIndexEnd || range->rangeType() == "RangeStringConstant"){
 
@@ -479,10 +551,6 @@ void PositionalLineEdits::seekRight()
                 if(rightMostAdjacentRangeValue != nullptr){
 
                     newCursorPosition = rightMostAdjacentRangeValue->m_charIndexStart;
-
-                }else{
-
-                    newCursorPosition = focusIndex;
 
                 }
 
@@ -496,11 +564,12 @@ void PositionalLineEdits::seekRight()
 
 }
 
-void PositionalLineEdits::maximumExceededFixup()
-{
+void PositionalLineEdits::maximumExceededFixup(){
 
-    //Simply just zero it all out
+    //Assume false and prove otherwise
     bool atOrExceedsValue(false);
+
+    //This will essentially zero out all RangeInts and set the first one to the max allowed value
     if(fabs(textToDecimalValue()) >= m_maxAllowableValue){
 
         atOrExceedsValue = true;
@@ -531,17 +600,22 @@ void PositionalLineEdits::maximumExceededFixup()
 
         }
 
+        //Production::Note: Any calling of QLineEdit::setText(...)
+        //will set the cursorPosition to the end of the LineEdit,
+        //so often you will see this getting saved off before we possibly
+        //make any call to QLineEdit::setText(...) to ensure we keep our position proper
         int focusIndex = this->cursorPosition();
+
         syncRangeSigns();
         scrapeDirtiedRanges();
+
         setCursorPosition(focusIndex);
 
     }
 
 }
 
-double PositionalLineEdits::sumRangeInts()
-{
+double PositionalLineEdits::sumRangeInts(){
 
     double sum(0.0);
 
@@ -559,42 +633,32 @@ double PositionalLineEdits::sumRangeInts()
 
 }
 
-void PositionalLineEdits::syncRangeSigns()
-{
+void PositionalLineEdits::syncRangeSigns(){
 
     //Assume it to be positive
-    bool sign = true;
+    bool charSign(true);
 
     //Grab the first RangeChar's sign
-    if(m_ranges.isEmpty() == false && m_ranges.first()->rangeType() == "RangeChar"){
+    if( (m_ranges.isEmpty() == false) && (m_ranges.first()->rangeType() == "RangeChar") ){
 
         RangeChar* rangeChar = static_cast<RangeChar*>(m_ranges.first());
 
-        if(rangeChar->valueStr() == rangeChar->m_positiveChar){
-
-            sign = true;
-
-        }else if(rangeChar->valueStr() == rangeChar->m_negativeChar){
-
-            sign = false;
-
-        }
+        charSign = (rangeChar->valueStr() == rangeChar->m_positiveChar);
 
     }
 
-    //Now loop through all RangeInts to make them the same sign
+    //Now loop through all RangeInts to make them the same sign (All positive or all negative)
     foreach(Range* range, m_ranges){
 
         if(range->rangeType() == "RangeInt"){
 
             RangeInt* rangeInt = static_cast<RangeInt*>(range);
 
-            bool rangeSign = rangeInt->m_value >= 0;
+            bool rangeSign = rangeInt->m_value > 0;
 
-            if(rangeSign != sign){
+            if(rangeSign != charSign){
 
-                rangeInt->m_value *= -1;
-                rangeInt->m_dirty = true;
+                rangeInt->m_value *= -1;                
 
             }
 
@@ -603,7 +667,9 @@ void PositionalLineEdits::syncRangeSigns()
     }
 
     int focusIndex = this->cursorPosition();
+
     scrapeDirtiedRanges(true);
+
     setCursorPosition(focusIndex);
 
 }
@@ -612,12 +678,16 @@ void PositionalLineEdits::scrapeTextFromRangeValue(Range* range, bool overrideBe
 
     if(range->m_dirty || overrideBeingDirty){
 
-        //Set the string based on the value, padded by 0s where the value doesn't reach the length
         QString curText    = this->text();
         QString paddedText = range->valueStr();
-        curText = curText.replace(range->m_charIndexStart, range->rangeLength(), paddedText);
+        curText = curText.replace(range->m_charIndexStart, paddedText.length(), paddedText);
 
         range->m_dirty = false;
+
+        //Production::Note: All calls to PositionalLineEdits::scrapeTextFromRangeValue(...) are wrapped in
+        //blockSignals(true) to prevent multiple emissions of textChanged per batch update.
+        //At the end of the block we check to see if our original text no longer matches the "new"
+        //scraped text and manually emit QLineEdit::textChanged(this->text()) once after unblocking signals
         setText(curText);
 
     }
@@ -627,25 +697,34 @@ void PositionalLineEdits::scrapeTextFromRangeValue(Range* range, bool overrideBe
 void PositionalLineEdits::scrapeDirtiedRanges(bool overrideBeingDirty){
 
     QString originalText = text();
+
     blockSignals(true);
+
     foreach(Range* range, m_ranges){
 
         scrapeTextFromRangeValue(range, overrideBeingDirty);
 
     }
+
     blockSignals(false);
 
+    //Doing this will ensure one emission of QLineEdit::textChanged(...) will occur for a given batch update
     if(originalText != text()){
+
         emit textChanged(text());
+
     }
 
 }
 
-void PositionalLineEdits::keyPressEvent(QKeyEvent* keyEvent)
-{
+void PositionalLineEdits::keyPressEvent(QKeyEvent* keyEvent){
 
-    int key = keyEvent->key();
-    int focusIndex = this->cursorPosition();
+    int key(keyEvent->key());
+
+    //Production::Note: The order of these if statements have specific precedence.
+    //The last check: `keyEvent->text().length() == 1` will trigger on any single key length,
+    //so if adding new functionality, ensure that it remains as the last if check to ensure new
+    //functionality isn't being skipped over.
 
     if(key == Qt::Key_Up){
 
@@ -665,63 +744,93 @@ void PositionalLineEdits::keyPressEvent(QKeyEvent* keyEvent)
 
     }else if(key == Qt::Key_Backspace){
 
-        setValueForIndex("0", focusIndex);
+        setValueForIndex("0", this->cursorPosition());
         seekLeft();
 
     }else if(key == Qt::Key_Delete){
 
-        setValueForIndex("0", focusIndex);
+        setValueForIndex("0", this->cursorPosition());
         seekRight();
 
-    }else if(keyEvent->text().size() == 1){
+    }else if(keyEvent->matches(QKeySequence::Copy)){
 
-        if(setValueForIndex(keyEvent->text(), focusIndex)){
+        copyDecimalToClipboard();
 
-            seekRight();
+    }else if(keyEvent->matches(QKeySequence::Paste)){
 
-        }
+        pasteAsDecimalFromClipboard();
 
     }else if(key == Qt::Key_Home || key == Qt::Key_End){
 
         QLineEdit::keyPressEvent(keyEvent);
 
     }
+    //Production::Note: Add new `else if`s above this one
+    else if(keyEvent->text().length() == 1){
+
+        if(setValueForIndex(keyEvent->text(), this->cursorPosition())){
+
+            seekRight();
+
+        }
+
+    }//Production::Note: Don't even think about adding another `else if` below here
 
 }
 
-
-void PositionalLineEdits::focusOutEvent(QFocusEvent* focusEvent)
-{
+void PositionalLineEdits::focusInEvent(QFocusEvent* focusEvent){
 
     int focusIndex = cursorPosition();
+
+    //This serves to make sure if the user somehow improperly called setText from another context and didn't use the supplied
+    //PositionalLineEdits::setTextFromDecimalValue(...), that we will clear the text and reconstruct the string on focusIn.
     clear();
     scrapeDirtiedRanges(true);
+
     setCursorPosition(focusIndex);
 
     QLineEdit::focusOutEvent(focusEvent);
 
 }
-void PositionalLineEdits::paintEvent(QPaintEvent* paintEvent)
-{
 
+void PositionalLineEdits::focusOutEvent(QFocusEvent* focusEvent){
+
+    int focusIndex = cursorPosition();
+
+    //This serves to make sure if the user somehow improperly called setText from another context and didn't use the supplied
+    //PositionalLineEdits::setTextFromDecimalValue(...), that we will clear the text and reconstruct the string on focusOut.
+    clear();
+    scrapeDirtiedRanges(true);
+
+    setCursorPosition(focusIndex);
+
+    QLineEdit::focusOutEvent(focusEvent);
+
+}
+
+void PositionalLineEdits::paintEvent(QPaintEvent* paintEvent){
+
+    //Draw the QLineEdit as normal
     QLineEdit::paintEvent(paintEvent);
 
-
     //Below highlights the current text that has focus in the widget and will be affected by an increment, decrement, or key press operation
-    if( (this->hasFocus() || m_incrementButton->hasFocus() || m_decrementButton->hasFocus()) && cursorPosition() < text().length() - 1){
+    if( (this->hasFocus() || m_incrementButton->underMouse() || m_decrementButton->underMouse()) && cursorPosition() < text().length() - 1){
 
         QPainter painter(this);
         painter.setPen(QPen(QColor(255, 255, 255, 0)));
-        painter.setBrush(QBrush(QColor(128, 128, 128, 75)));
+        painter.setBrush(QBrush(m_highlightColor));
 
         QFontMetrics fontMetrics(font());
 
-        int pixelsWide = fontMetrics.width(text().at(cursorPosition()));
+        int pixelsWide = fontMetrics.horizontalAdvance(text().at(cursorPosition()));
         int pixelsHigh = fontMetrics.height();
 
         QPoint topLeft  = cursorRect().topLeft();
-        //The topLeft start width() is too far from the blinking caret (text cursor), so this offsets the start properly
+
+        //The topLeft start x position is too far from the blinking caret (text cursor),
+        //so this offsets the x position properly to align with the blinking caret properly
         topLeft.setX(topLeft.x() + cursorRect().width() / 2);
+
         QPoint botRight = QPoint(topLeft.x() + pixelsWide - 1, topLeft.y() + pixelsHigh);
 
         painter.drawRect(QRect(topLeft, botRight));
@@ -731,11 +840,12 @@ void PositionalLineEdits::paintEvent(QPaintEvent* paintEvent)
 
 }
 
-void PositionalLineEdits::resizeEvent(QResizeEvent *resizeEvent)
-{
+void PositionalLineEdits::resizeEvent(QResizeEvent* resizeEvent){
 
+    //This will make it so the buttons have some wiggle room (simulates as if they're in a layout, without actually being in one)
     QSize buttonSize(width() * 0.10, height() / 2 + 1);
 
+    //These buttons have an enforced minimum and maximum size, so it will scale slightly with the size of the widget, to an extent
     m_incrementButton->resize(buttonSize);
     m_decrementButton->resize(buttonSize);
 
@@ -746,12 +856,11 @@ void PositionalLineEdits::resizeEvent(QResizeEvent *resizeEvent)
 
 }
 
-void PositionalLineEdits::wheelEvent(QWheelEvent* wheelEvent)
-{
+void PositionalLineEdits::wheelEvent(QWheelEvent* wheelEvent){
 
     if(this->hasFocus()){
 
-        if(wheelEvent->delta() > 0){
+        if(wheelEvent->angleDelta().y() > 0){
 
             increment();
 
@@ -767,22 +876,34 @@ void PositionalLineEdits::wheelEvent(QWheelEvent* wheelEvent)
 
 }
 
-void PositionalLineEdits::showContextMenu(const QPoint &pos)
-{
+void PositionalLineEdits::showContextMenu(const QPoint& pos){
 
-     m_customContextMenu->exec(mapToGlobal(pos));
+    //Optionally enable / disable the paste operation depending on whether the clipboard actually holds a valid decimal string
+    if(QGuiApplication::clipboard() != nullptr){
+
+        bool canConvertToDecimal(false);
+        QGuiApplication::clipboard()->text().toDouble(&canConvertToDecimal);
+        m_pasteAsDecimalFromClipBoardAction->setEnabled(canConvertToDecimal);
+
+    }
+
+    m_customContextMenu->exec(mapToGlobal(pos));
+
 }
 
-void PositionalLineEdits::cursorPositionChangedEvent(int, int cur)
-{
+void PositionalLineEdits::cursorPositionChangedEvent(int, int cur){
 
     Range* range = getRangeForIndex(cur);
     if(range != nullptr && range->rangeType() == "RangeStringConstant"){
 
-        //go to the left by default, if possible, else right
+        //Go to the left, if possible, otherwise fall back to the right
         if(range->m_leftRange != nullptr){
 
             setCursorPosition(range->m_leftRange->m_charIndexEnd);
+
+        }else if(range->m_rightRange != nullptr){
+
+            setCursorPosition(range->m_rightRange->m_charIndexStart);
 
         }
 
@@ -796,540 +917,9 @@ void PositionalLineEdits::cursorPositionChangedEvent(int, int cur)
 
 }
 
-void PositionalLineEdits::selectionChangedEvent()
-{
+void PositionalLineEdits::selectionChangedEvent(){
 
-    //Prevent selection
+    //Prevent selection by the user (Don't worry, this widget still lets you copy and paste properly with Ctr+c and Ctrl+v)
     deselect();
 
-}
-
-RangeInt::RangeInt(int range, int divisor)
-    : Range    (),
-      m_range  (range),
-      m_value  (0),
-      m_divisor(divisor)
-{
-    //NOP
-}
-
-void RangeInt::setRange(int range)
-{
-    m_range = range;
-}
-
-void RangeInt::setDivisor(int divisor)
-{
-    if(divisor > 0){
-
-        m_divisor = divisor;
-
-    }else{
-
-        std::cerr << "Error. RangeInt::setDivisor(...) called with a divisor less than or equal to 0." << std::endl;
-
-    }
-}
-
-bool RangeInt::increment(int index){
-
-    //The index refers to the indexing from right to left (not what people are used to)
-    //i.e. for dgerees it has format [000, 180], so in this example for 180
-    //index == 0 = 0
-    //index == 1 = 8
-    //index == 2 = 1
-
-    int valueToIncrementBy = std::pow(10, index);
-    int originalValue      = m_value;
-    //Incrementing a positive number
-    if(m_value > 0){
-
-        if(m_value + valueToIncrementBy >= m_range + 1){
-
-            if(m_leftRange){
-
-                //If we can increment all of our left Ranges
-                if(m_leftRange->increment(0)){
-
-                    m_value += valueToIncrementBy - m_range - 1;
-
-                }
-                //We've hit our maximum value if we couldn't increment recursively
-                else{
-
-                    m_value = m_range;
-
-                }
-
-            }
-
-        }else{
-
-            m_value += valueToIncrementBy;
-
-        }
-
-    }
-    //Incrementing a negative number (Should make the number approach 0 (i.e. -20 + 10 = -10)
-    else if(m_value < 0){
-
-        //If we increment our value above 0, but we're supposed to be negative (i.e. -05 + 10 = -55 && increment the left)
-        if(m_value + valueToIncrementBy > 0){
-
-
-
-            bool flippingFromNegToPos = allValuesToLeftAreZero() && leftMostRange()->increment(0);
-
-            if(flippingFromNegToPos){
-
-                m_value = -m_value;
-
-            }else if(m_leftRange != nullptr && m_leftRange->increment(0)){
-
-                m_value = -m_range + 1 + valueToIncrementBy;
-
-            }
-
-        }
-        //Else we can just increment because we're still going to be negative (i.e. -15 + 10 = -05)
-        else{
-
-            m_value += valueToIncrementBy;
-
-        }
-
-    }
-    //This is a special case, depending on if our left neighbor is the RangeChar or not
-    else{
-
-        //If the whole value is positive, we can safely increment
-        if(leftMostRangeCharSign() == true){
-
-            m_value += valueToIncrementBy;
-
-        }
-        //If the whole value is negative, we need to check if everything to our left is zeroed out or not
-        else{
-
-            if(allValuesToLeftAreZero()){
-
-                leftMostRange()->increment(0);
-                m_value += valueToIncrementBy;
-
-            }else{
-
-                //We're actually incrementing what should be a negative number is in this case
-                if(m_leftRange->increment(0)){
-
-                    m_value =  -m_range - 1 + valueToIncrementBy;
-
-                }
-
-            }
-
-        }
-
-    }
-
-    m_dirty = (m_value != originalValue);
-
-    return m_dirty;
-
-}
-
-bool RangeInt::decrement(int index){
-
-    //The index refers to the indexing from right to left (not what people are used to)
-    //i.e. for dgerees it has format [000, 180], so in this example for 180
-    //index == 0 = 0
-    //index == 1 = 8
-    //index == 2 = 1
-
-    int valueToDecrementBy = std::pow(10, index);
-    int originalValue      = m_value;
-
-    //Decrementing a positive number
-    if(m_value > 0){
-
-        //We're borrowing a negative from our left (if all non-zero) or the rangeChar
-        if(m_value - valueToDecrementBy < 0){
-
-            bool flippingFromPosToNeg = allValuesToLeftAreZero() && leftMostRange()->decrement(0);
-
-            if(flippingFromPosToNeg){
-
-                m_value = -m_value;
-
-            }else if(m_leftRange != nullptr && m_leftRange->decrement(0)){
-
-                m_value = m_range - (valueToDecrementBy - m_value - 1);
-
-            }
-
-        }else{
-
-            m_value -= valueToDecrementBy;
-
-        }
-
-    }
-    //Decrementing a negative number
-    else if(m_value < 0){
-
-        //If we underflow (i.e. At -55 minutes and we want to subtract 10, we went below -59)
-        //Expect to become -05, but we have to be able to borrow from our left
-        if(m_value - valueToDecrementBy < -m_range){
-
-            //We have to have a left range
-            if(m_leftRange != this){
-
-                //If we can decrement the left range
-                if(m_leftRange->decrement(0)){
-
-                    //(i.e. -55 - 10 + 59 + 1 = -65 + 60 = -5)
-                    m_value = m_value - valueToDecrementBy + m_range + 1;
-
-                }
-
-            }
-
-        }else{
-
-            //(i.e. -45 - 10 = -55)
-            m_value -= valueToDecrementBy;
-
-        }
-
-    }
-    //This is a special case, depending on if our left neighbor is the RangeChar or not
-    else{
-
-        if(leftMostRangeCharSign() == true){
-
-            if(allValuesToLeftAreZero() == true){
-
-                leftMostRange()->decrement(0);
-                m_value -= valueToDecrementBy;
-
-            }else{
-
-                if(m_leftRange != nullptr && m_leftRange->decrement(0)){
-
-                    m_value = -m_range - valueToDecrementBy + 1;
-
-                }
-
-            }
-
-        }else{
-
-            m_value -= valueToDecrementBy;
-
-        }
-
-    }
-
-    m_dirty = (m_value != originalValue);
-
-    return m_dirty;
-
-}
-
-int RangeInt::valueLength()
-{
-    return QString::number(abs(m_value)).length();
-}
-
-int RangeInt::rangeLength()
-{
-    return QString::number(m_range).length();
-}
-
-QString RangeInt::valueStr()
-{
-    return QString("0").repeated(rangeLength() - valueLength()) + QString::number(abs(m_value));
-}
-
-QString RangeInt::rangeType()
-{
-    return "RangeInt";
-}
-
-int RangeInt::divisor()
-{
-    return m_divisor;
-}
-
-bool RangeInt::setValueForIndex(const QString& value, int index)
-{
-
-    bool valueWasSet = false;
-
-    //This is to replace when the user is type numerical values at an index
-    //For example, Degrees goes from [000, 180]
-    //We attempt to replace the value for index string and convert the value back to an int and then verify it's within range
-    if(value.length() == 1 && QRegExp("\\d").exactMatch(value)){
-
-        int attemptedValue = valueStr().replace(index, 1, value).toInt() * (std::signbit(m_value) ? 1 : -1);
-
-        if(fabs(attemptedValue) <= m_range){
-
-            m_value = attemptedValue;
-
-        }else{
-
-            m_value = m_range * (std::signbit(m_value) ? 1 : -1);
-
-        }
-
-        m_dirty = true;
-        valueWasSet = true;
-
-    }
-
-    return valueWasSet;
-
-}
-
-bool RangeChar::increment(int)
-{
-    bool incremented(false);
-    if(m_value != m_positiveChar){
-
-        incremented = true;
-        m_value = m_positiveChar;
-        m_dirty = true;
-
-    }
-
-    return incremented;
-}
-
-bool RangeChar::decrement(int)
-{
-    bool decremented(false);
-    if(m_value != m_negativeChar){
-        m_value = m_negativeChar;
-        decremented = true;
-        m_dirty = true;
-
-    }
-
-    return decremented;
-}
-
-int RangeChar::valueLength()
-{
-    return 1;
-}
-
-int RangeChar::rangeLength()
-{
-    return 1;
-}
-
-QString RangeChar::valueStr()
-{
-    return QString(m_value);
-}
-
-QString RangeChar::rangeType()
-{
-    return "RangeChar";
-}
-
-int RangeChar::divisor()
-{
-    return 1;
-}
-
-bool RangeChar::setValueForIndex(const QString& value, int index)
-{
-
-    bool valueWasSet = false;
-
-    if(value.length() == rangeLength() && index <= m_charIndexEnd){
-
-        //Check case insensitively
-        if( (value.at(0).toLower() == m_positiveChar.toLower() || value.at(0).toLower() == m_negativeChar.toLower())){
-
-            m_value     = m_value.isUpper() ? value.at(0).toUpper() : value.at(0).toLower();
-            m_dirty     = true;
-            valueWasSet = true;
-
-        }
-
-    }
-
-    return valueWasSet;
-
-}
-
-void RangeChar::setRange(QChar negativeChar, QChar positiveChar)
-{
-    m_negativeChar = negativeChar;
-    m_positiveChar = positiveChar;
-}
-
-RangeChar::RangeChar(QChar negativeChar, QChar positiveChar)
-    : Range(),
-      m_negativeChar(negativeChar),
-      m_positiveChar(positiveChar),
-      m_value       (m_positiveChar)
-{
-    //NOP
-}
-
-Range::Range()
-    : m_charIndexStart(0),
-      m_charIndexEnd  (0),
-      m_leftRange     (nullptr),
-      m_rightRange    (nullptr),
-      m_dirty         (false)
-{
-    //NOP
-}
-
-Range::~Range(){
-    m_leftRange  = nullptr;
-    m_rightRange = nullptr;
-}
-
-Range* Range::leftMostRange()
-{
-    Range* range = this;
-    while(range != nullptr && range->m_leftRange != nullptr){
-
-        range = range->m_leftRange;
-
-    }
-
-    return range;
-}
-
-RangeInt* Range::leftMostRangeInt()
-{
-    RangeInt* rangeInt = dynamic_cast<RangeInt*>(this);
-    Range* rangeIter = this->m_leftRange;
-    while(rangeIter != nullptr){
-
-        //Production::Note: We don't break because we might find another, more left RangeInt
-        if(rangeIter->rangeType() == "RangeInt"){
-
-            rangeInt = static_cast<RangeInt*>(rangeIter);
-
-        }
-
-        rangeIter = rangeIter->m_leftRange;
-
-    }
-
-    return rangeInt;
-}
-
-bool Range::allValuesToLeftAreZero()
-{
-    //Assume true and prove otherwise
-    bool allRangeIntsToLeftAreZero(true);
-    Range* rangeIter = this->m_leftRange;
-    while(rangeIter != nullptr){
-
-        //Production::Note: We don't break because we might find another, more left RangeInt
-        if(rangeIter->rangeType() == "RangeInt"){
-
-            allRangeIntsToLeftAreZero &= (static_cast<RangeInt*>(rangeIter)->m_value == 0);
-
-        }
-
-        rangeIter = rangeIter->m_leftRange;
-
-    }
-
-    return allRangeIntsToLeftAreZero;
-
-}
-
-bool Range::leftMostRangeCharSign()
-{
-    //Assume true and prove otherwise
-    bool positiveSign(true);
-    Range* rangeIter = this->m_leftRange;
-    while(rangeIter != nullptr){
-
-        if(rangeIter->rangeType() == "RangeChar"){
-
-            positiveSign = (static_cast<RangeChar*>(rangeIter)->m_value == static_cast<RangeChar*>(rangeIter)->m_positiveChar);
-
-        }
-
-        rangeIter = rangeIter->m_leftRange;
-
-    }
-
-    return positiveSign;
-
-}
-
-RangeStringConstant::RangeStringConstant(QString stringPlaceHolder)
-    : Range  (),
-      m_value(stringPlaceHolder)
-{
-    //NOP
-}
-
-bool RangeStringConstant::increment(int){
-
-    bool incremented(true);
-    if(m_leftRange != nullptr){
-
-        incremented = m_leftRange->increment(0);
-
-    }
-
-    return incremented;
-}
-
-bool RangeStringConstant::decrement(int){
-
-    bool decremented(true);
-    if(m_leftRange != nullptr){
-
-        decremented = m_leftRange->decrement(0);
-
-    }
-
-    return decremented;
-
-}
-
-int RangeStringConstant::valueLength()
-{
-    return m_value.length();
-}
-
-int RangeStringConstant::rangeLength()
-{
-    return m_value.length();
-}
-
-QString RangeStringConstant::valueStr()
-{
-    return m_value;
-}
-
-QString RangeStringConstant::rangeType()
-{
-    return "RangeStringConstant";
-}
-
-int RangeStringConstant::divisor()
-{
-    return 1;
-}
-
-bool RangeStringConstant::setValueForIndex(const QString& value, int index)
-{
-    Q_UNUSED(value);
-    Q_UNUSED(index);
-    return true;
 }

@@ -12,6 +12,7 @@ SOURCES += \
     LatitudeLineEdit.cpp \
     LongitudeLineEdit.cpp \
     PositionalLineEdits.cpp \
+    Ranges.cpp \
     TrianglePaintedButton.cpp \
     main.cpp \
     MainWindow.cpp
@@ -21,6 +22,7 @@ HEADERS += \
     LongitudeLineEdit.h \
     MainWindow.h \
     PositionalLineEdits.h \
+    Ranges.h \
     TrianglePaintedButton.h
 
 # Default rules for deployment.

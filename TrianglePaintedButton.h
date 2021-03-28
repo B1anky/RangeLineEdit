@@ -3,6 +3,8 @@
 
 #include <QPushButton>
 
+class QHoverEvent;
+
 class TrianglePaintedButton : public QPushButton{
 
     Q_OBJECT
@@ -22,7 +24,9 @@ protected slots:
 
     void paintEvent(QPaintEvent* paintEvent);
 
+    void enterEvent(QEvent* enterEvent) override;
 
+    void leaveEvent(QEvent* leaveEvent) override;
 
 };
 

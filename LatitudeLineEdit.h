@@ -7,7 +7,7 @@ class LatitudeLineEdit : public PositionalLineEdits{
 
 public:
 
-    LatitudeLineEdit(int decimals, QWidget *parent = nullptr);
+    LatitudeLineEdit(int decimals, QWidget* parent = nullptr);
 
 };
 
