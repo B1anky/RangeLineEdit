@@ -3,7 +3,7 @@ Qt QLineEdit subclass and formatting engine to create any type of restricted Reg
 My example creates a Latitude and Longitude LineEdit validator.
 This can technically be expanded for any use case, including a phone number validator, for example.
 
-Hello! Welcome to the first full functioning Latitude and Longitude DMS widget suite. 
+Hello! Welcome to the first fully functioning Latitude and Longitude DMS widget suite. 
 This widget allows you to create editable QLineEdits that support user input, key press events, and mouse wheel events.
 
 Usage:
