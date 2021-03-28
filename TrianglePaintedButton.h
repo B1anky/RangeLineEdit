@@ -22,7 +22,7 @@ public:
 
 protected slots:
 
-    void paintEvent(QPaintEvent* paintEvent);
+    void paintEvent(QPaintEvent* paintEvent) override;
 
     void enterEvent(QEvent* enterEvent) override;
 

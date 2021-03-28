@@ -17,6 +17,8 @@
 #include <cmath>
 #include <iostream>
 
+/* --- Public methods --- */
+
 PositionalLineEdits::PositionalLineEdits(QWidget* parent)
     : QLineEdit                          (parent),
       m_ranges                           ({}),
@@ -55,105 +57,6 @@ PositionalLineEdits::PositionalLineEdits(QWidget* parent)
 PositionalLineEdits::~PositionalLineEdits(){
 
     clearCurrentValidators();
-
-}
-
-void PositionalLineEdits::setupIncrementAndDecrementButtons(){
-
-    //Production::Note: It doesn't looks like the inverse character, but it appears properly
-    m_incrementButton = new TrianglePaintedButton(TrianglePaintedButton::Direction::UP,   this);
-    m_decrementButton = new TrianglePaintedButton(TrianglePaintedButton::Direction::DOWN, this);
-
-    m_incrementButton->setMinimumWidth(15);
-    m_decrementButton->setMinimumWidth(15);
-
-    m_incrementButton->setMaximumWidth(25);
-    m_decrementButton->setMaximumWidth(25);
-
-    m_incrementButton->setMouseTracking(true);
-    m_decrementButton->setMouseTracking(true);
-
-    connect(m_incrementButton, &QPushButton::clicked, this, &PositionalLineEdits::increment, Qt::DirectConnection);
-    connect(m_decrementButton, &QPushButton::clicked, this, &PositionalLineEdits::decrement, Qt::DirectConnection);
-
-}
-
-void PositionalLineEdits::createCustomContextMenu(){
-
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    m_customContextMenu = new QMenu(this);
-
-    m_copyAsTextToClipBoardAction       = m_customContextMenu->addAction("Copy  [As text]");
-    m_copyAsDecimalToClipBoardAction    = m_customContextMenu->addAction("Copy  [As decimal]");
-    m_pasteAsDecimalFromClipBoardAction = m_customContextMenu->addAction("Paste [From decimal]");
-    m_clearAction                       = m_customContextMenu->addAction("Clear");
-
-    connect(m_copyAsTextToClipBoardAction,       &QAction::triggered, this, &PositionalLineEdits::copyTextToClipboard,         Qt::DirectConnection);
-    connect(m_copyAsDecimalToClipBoardAction,    &QAction::triggered, this, &PositionalLineEdits::copyDecimalToClipboard,      Qt::DirectConnection);
-    connect(m_pasteAsDecimalFromClipBoardAction, &QAction::triggered, this, &PositionalLineEdits::pasteAsDecimalFromClipboard, Qt::DirectConnection);
-    connect(m_clearAction,                       &QAction::triggered, this, &PositionalLineEdits::clearText,                   Qt::DirectConnection);
-
-}
-
-void PositionalLineEdits::copyTextToClipboard(){
-
-    QClipboard* clipboard = QGuiApplication::clipboard();
-    if(clipboard != nullptr){
-
-        clipboard->setText(text());
-
-    }
-
-}
-
-void PositionalLineEdits::copyDecimalToClipboard(){
-
-    QClipboard* clipboard = QGuiApplication::clipboard();
-    if(clipboard != nullptr){
-
-        clipboard->setText(QString::number(textToDecimalValue(), 'f', m_decimals));
-
-    }
-
-}
-
-void PositionalLineEdits::pasteAsDecimalFromClipboard(){
-
-    QClipboard* clipboard = QGuiApplication::clipboard();
-    if(clipboard != nullptr){
-
-        bool isDecimal(false);
-        double clipboardAsDouble = clipboard->text().toDouble(&isDecimal);
-        if(isDecimal){
-
-            setTextFromDecimalValue(clipboardAsDouble);
-
-        }
-
-    }
-
-}
-
-void PositionalLineEdits::clearText(){
-
-    int focusIndex = cursorPosition();
-
-    foreach(Range* range, m_ranges){
-
-        if(range->rangeType() == "RangeInt"){
-
-            static_cast<RangeInt*>(range)->m_value = 0;
-            range->m_dirty = true;
-
-        }
-
-    }
-
-    m_undisplayedPrecision = 0.0;
-
-    scrapeDirtiedRanges();
-
-    setCursorPosition(focusIndex);
 
 }
 
@@ -295,6 +198,45 @@ void PositionalLineEdits::setActiveIndexHighlightColor(const QColor& highlightCo
 
 }
 
+/* --- Protected methods --- */
+
+void PositionalLineEdits::setupIncrementAndDecrementButtons(){
+
+    //Production::Note: It doesn't looks like the inverse character, but it appears properly
+    m_incrementButton = new TrianglePaintedButton(TrianglePaintedButton::Direction::UP,   this);
+    m_decrementButton = new TrianglePaintedButton(TrianglePaintedButton::Direction::DOWN, this);
+
+    m_incrementButton->setMinimumWidth(15);
+    m_decrementButton->setMinimumWidth(15);
+
+    m_incrementButton->setMaximumWidth(25);
+    m_decrementButton->setMaximumWidth(25);
+
+    m_incrementButton->setMouseTracking(true);
+    m_decrementButton->setMouseTracking(true);
+
+    connect(m_incrementButton, &QPushButton::clicked, this, &PositionalLineEdits::increment, Qt::DirectConnection);
+    connect(m_decrementButton, &QPushButton::clicked, this, &PositionalLineEdits::decrement, Qt::DirectConnection);
+
+}
+
+void PositionalLineEdits::createCustomContextMenu(){
+
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    m_customContextMenu = new QMenu(this);
+
+    m_copyAsTextToClipBoardAction       = m_customContextMenu->addAction("Copy  [As text]");
+    m_copyAsDecimalToClipBoardAction    = m_customContextMenu->addAction("Copy  [As decimal]");
+    m_pasteAsDecimalFromClipBoardAction = m_customContextMenu->addAction("Paste [From decimal]");
+    m_clearAction                       = m_customContextMenu->addAction("Clear");
+
+    connect(m_copyAsTextToClipBoardAction,       &QAction::triggered, this, &PositionalLineEdits::copyTextToClipboard,         Qt::DirectConnection);
+    connect(m_copyAsDecimalToClipBoardAction,    &QAction::triggered, this, &PositionalLineEdits::copyDecimalToClipboard,      Qt::DirectConnection);
+    connect(m_pasteAsDecimalFromClipBoardAction, &QAction::triggered, this, &PositionalLineEdits::pasteAsDecimalFromClipboard, Qt::DirectConnection);
+    connect(m_clearAction,                       &QAction::triggered, this, &PositionalLineEdits::clearText,                   Qt::DirectConnection);
+
+}
+
 Range* PositionalLineEdits::findAdjacentNonStringConstantRange(Range* range, bool seekLeftRange){
 
     Range* adjacentRange(nullptr);
@@ -365,42 +307,23 @@ Range* PositionalLineEdits::getRangeForIndex(int index){
 
 }
 
-void PositionalLineEdits::clearCurrentValidators(){
+void PositionalLineEdits::scrapeTextFromRangeValue(Range* range, bool overrideBeingDirty){
 
-    foreach(Range* range, m_ranges){
+    if(range->m_dirty || overrideBeingDirty){
 
-        if(dynamic_cast<RangeInt*>(range)){
+        QString curText    = this->text();
+        QString paddedText = range->valueStr();
+        curText = curText.replace(range->m_charIndexStart, paddedText.length(), paddedText);
 
-            delete dynamic_cast<RangeInt*>(range);
+        range->m_dirty = false;
 
-        }else if(dynamic_cast<RangeChar*>(range)){
-
-            delete dynamic_cast<RangeChar*>(range);
-
-        }else if(dynamic_cast<RangeStringConstant*>(range)){
-
-            delete dynamic_cast<RangeStringConstant*>(range);
-
-        }else{
-
-            delete range;
-
-        }
-
-        range = nullptr;
+        //Production::Note: All calls to PositionalLineEdits::scrapeTextFromRangeValue(...) are wrapped in
+        //blockSignals(true) to prevent multiple emissions of textChanged per batch update.
+        //At the end of the block we check to see if our original text no longer matches the "new"
+        //scraped text and manually emit QLineEdit::textChanged(this->text()) once after unblocking signals
+        setText(curText);
 
     }
-
-    m_ranges.clear();
-
-    //Ensures everything is properly not pointing to deleted memory
-    m_degreeChar   = nullptr;
-    m_degreeInt    = nullptr;
-    m_degreeSymbol = nullptr;
-    m_minuteInt    = nullptr;
-    m_minuteSymbol = nullptr;
-    m_secondsInt   = nullptr;
-    m_secondSymbol = nullptr;
 
 }
 
@@ -442,7 +365,70 @@ void PositionalLineEdits::syncRangeEdges(){
 
 }
 
-void PositionalLineEdits::increment(){    
+void PositionalLineEdits::scrapeDirtiedRanges(bool overrideBeingDirty){
+
+    QString originalText = text();
+
+    blockSignals(true);
+
+    foreach(Range* range, m_ranges){
+
+        scrapeTextFromRangeValue(range, overrideBeingDirty);
+
+    }
+
+    blockSignals(false);
+
+    //Doing this will ensure one emission of QLineEdit::textChanged(...) will occur for a given batch update
+    if(originalText != text()){
+
+        emit textChanged(text());
+
+    }
+
+}
+
+void PositionalLineEdits::clearCurrentValidators(){
+
+    foreach(Range* range, m_ranges){
+
+        if(dynamic_cast<RangeInt*>(range)){
+
+            delete dynamic_cast<RangeInt*>(range);
+
+        }else if(dynamic_cast<RangeChar*>(range)){
+
+            delete dynamic_cast<RangeChar*>(range);
+
+        }else if(dynamic_cast<RangeStringConstant*>(range)){
+
+            delete dynamic_cast<RangeStringConstant*>(range);
+
+        }else{
+
+            delete range;
+
+        }
+
+        range = nullptr;
+
+    }
+
+    m_ranges.clear();
+
+    //Ensures everything is properly not pointing to deleted memory
+    m_degreeChar   = nullptr;
+    m_degreeInt    = nullptr;
+    m_degreeSymbol = nullptr;
+    m_minuteInt    = nullptr;
+    m_minuteSymbol = nullptr;
+    m_secondsInt   = nullptr;
+    m_secondSymbol = nullptr;
+
+}
+
+
+void PositionalLineEdits::increment(){
 
     //Check if this position belongs to a valid Range
     Range* range = getRangeForIndex(m_prevCursorPosition);
@@ -467,7 +453,7 @@ void PositionalLineEdits::increment(){
 
 }
 
-void PositionalLineEdits::decrement(){       
+void PositionalLineEdits::decrement(){
 
     //Check if this position belongs to a valid Range
     Range* range = getRangeForIndex(m_prevCursorPosition);
@@ -658,7 +644,7 @@ void PositionalLineEdits::syncRangeSigns(){
 
             if(rangeSign != charSign){
 
-                rangeInt->m_value *= -1;                
+                rangeInt->m_value *= -1;
 
             }
 
@@ -674,48 +660,7 @@ void PositionalLineEdits::syncRangeSigns(){
 
 }
 
-void PositionalLineEdits::scrapeTextFromRangeValue(Range* range, bool overrideBeingDirty){
-
-    if(range->m_dirty || overrideBeingDirty){
-
-        QString curText    = this->text();
-        QString paddedText = range->valueStr();
-        curText = curText.replace(range->m_charIndexStart, paddedText.length(), paddedText);
-
-        range->m_dirty = false;
-
-        //Production::Note: All calls to PositionalLineEdits::scrapeTextFromRangeValue(...) are wrapped in
-        //blockSignals(true) to prevent multiple emissions of textChanged per batch update.
-        //At the end of the block we check to see if our original text no longer matches the "new"
-        //scraped text and manually emit QLineEdit::textChanged(this->text()) once after unblocking signals
-        setText(curText);
-
-    }
-
-}
-
-void PositionalLineEdits::scrapeDirtiedRanges(bool overrideBeingDirty){
-
-    QString originalText = text();
-
-    blockSignals(true);
-
-    foreach(Range* range, m_ranges){
-
-        scrapeTextFromRangeValue(range, overrideBeingDirty);
-
-    }
-
-    blockSignals(false);
-
-    //Doing this will ensure one emission of QLineEdit::textChanged(...) will occur for a given batch update
-    if(originalText != text()){
-
-        emit textChanged(text());
-
-    }
-
-}
+/* --- Protected Slots ---*/
 
 void PositionalLineEdits::keyPressEvent(QKeyEvent* keyEvent){
 
@@ -931,5 +876,67 @@ void PositionalLineEdits::selectionChangedEvent(){
 
     //Prevent selection by the user (Don't worry, this widget still lets you copy and paste properly with Ctr+c and Ctrl+v)
     deselect();
+
+}
+
+void PositionalLineEdits::copyTextToClipboard(){
+
+    QClipboard* clipboard = QGuiApplication::clipboard();
+    if(clipboard != nullptr){
+
+        clipboard->setText(text());
+
+    }
+
+}
+
+void PositionalLineEdits::copyDecimalToClipboard(){
+
+    QClipboard* clipboard = QGuiApplication::clipboard();
+    if(clipboard != nullptr){
+
+        clipboard->setText(QString::number(textToDecimalValue(), 'f', m_decimals));
+
+    }
+
+}
+
+void PositionalLineEdits::pasteAsDecimalFromClipboard(){
+
+    QClipboard* clipboard = QGuiApplication::clipboard();
+    if(clipboard != nullptr){
+
+        bool isDecimal(false);
+        double clipboardAsDouble = clipboard->text().toDouble(&isDecimal);
+        if(isDecimal){
+
+            setTextFromDecimalValue(clipboardAsDouble);
+
+        }
+
+    }
+
+}
+
+void PositionalLineEdits::clearText(){
+
+    int focusIndex = cursorPosition();
+
+    foreach(Range* range, m_ranges){
+
+        if(range->rangeType() == "RangeInt"){
+
+            static_cast<RangeInt*>(range)->m_value = 0;
+            range->m_dirty = true;
+
+        }
+
+    }
+
+    m_undisplayedPrecision = 0.0;
+
+    scrapeDirtiedRanges();
+
+    setCursorPosition(focusIndex);
 
 }
