@@ -15,6 +15,7 @@ LatitudeLineEdit* latitudeLineEdit = new LatitudeLineEdit(decimalPrecision);
 
 double decimalDegree = 47.55;
 latitudeLineEdit->setTextFromDecimalValue(decimalDegree);
+//The widget now should display: N47°33'00.00000''
 
 double storedValue = latitudeLineEdit->textToDecimalValue();
 
