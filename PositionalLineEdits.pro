@@ -9,13 +9,19 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    LatitudeLineEdit.cpp \
+    LongitudeLineEdit.cpp \
     PositionalLineEdits.cpp \
+    TrianglePaintedButton.cpp \
     main.cpp \
     MainWindow.cpp
 
 HEADERS += \
+    LatitudeLineEdit.h \
+    LongitudeLineEdit.h \
     MainWindow.h \
-    PositionalLineEdits.h
+    PositionalLineEdits.h \
+    TrianglePaintedButton.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
