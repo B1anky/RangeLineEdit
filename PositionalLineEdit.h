@@ -1,125 +1,98 @@
 #ifndef POSITIONALLINEEDIT_H
 #define POSITIONALLINEEDIT_H
 
-#include <QLineEdit>
-#include <QPointer>
+#include "RangeLineEdit.h"
 
-class Range;
-class RangeChar;
-class RangeInt;
-class RangeStringConstant;
-
-class TrianglePaintedButton;
-class QPushButton;
-class QMenu;
-class QAction;
-
-class PositionalLineEdits : public QLineEdit{
+/*! class PositionalLineEdit
+ *
+ * Specialized derived type of RangeLineEdit for type double to be used for Latitude and Longitude values.
+ * Supports a DMS (Degree, Minute, Second) styled formatting for the QLineEdit. (i.e. N90°00'00.00'' or E180°00'00.00'')
+ * Base class behavior bewteen the two are equivalent, the only difference,
+ * for the most part between Latitude and Longitude are their degree sign's characters and their degree's ranges.
+ */
+class PositionalLineEdit : public RangeLineEdit<double>{
 
     Q_OBJECT
 
 public:
 
-    enum Type{
+    /*
+     * Value Constructor
+     * @PARAM QWidget* parent - Standard Qt parenting mechanism for memory management
+     */
+    PositionalLineEdit(QWidget* parent = nullptr);
 
-        LATITUDE,
-        LONGITUDE,
-        INVALID
+    /*
+     * Calls base class implementation, and if successful will reset undisplayed precision to 0
+     * @PARAM const QChar& value - The String to set at the given index
+     * @PARAM int          index - The index used to lookup the held Range
+     */
+    bool setValueForIndex(const QChar& value, int index) override;
 
-    };
+    /*
+     * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value
+     * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
+     * @PARAM double value - The value that should be handled to populate the widget's Ranges from its specified derived type
+     */
+    void setValue(double value) override;
 
-    PositionalLineEdits(QWidget* parent = nullptr);
-
-    ~PositionalLineEdits();
-
-    void setPrecision(int decimals);
-
-    bool setValueForIndex(QString value, int index);
-
-    double textToDecimalValue();
-
-    void setTextFromDecimalValue(double decimalDegrees);
-
-    void setActiveIndexHighlightColor(const QColor& highlightColor, bool implicitlyMakeSemiTransparent = true);
+    /*
+     * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value
+     * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
+     * For this type it returns a decimal version of a string
+     */
+    double value() override;
 
 protected:
 
-    void setupIncrementAndDecrementButtons();
+    /*
+     * Clears all Ranges properly, nulls out the memory, and clears the held list, nulls out members explicitly
+     */
+    void clearCurrentValidators() override;
 
-    void createCustomContextMenu();
+    /*
+     * Attempts to increment the Range at the current cursor index, resets undisplayed precision to 0 if the text changed
+     */
+    void increment() override;
 
-    Range* findAdjacentNonStringConstantRange(Range* range, bool seekLeftRange);
+    /*
+     * Attempts to decrement the Range at the current cursor index, resets undisplayed precision to 0 if the text changed
+     */
+    void decrement() override;
 
-    Range* getRangeForIndex(int index);
-
-    void scrapeTextFromRangeValue(Range* range, bool overrideBeingDirty = false);
-
-    void syncRangeEdges();
-
-    void scrapeDirtiedRanges(bool overrideBeingDirty = false);
-
-    void clearCurrentValidators();
-
-    void increment();
-
-    void decrement();
-
-    void seekLeft();
-
-    void seekRight();
-
-    void maximumExceededFixup();
-
-    double sumRangeInts();
-
-    void syncRangeSigns();
+    /*
+     * Helper function that ensures any changes to the value of a Range will not exceed the maximum allowable set value.
+     * If the maximum is exceeded, the first-most RangeInt will be set to its range and all subsequent RangeInts will be zeroed out.
+     */
+    void maximumExceededFixup() override;
 
 protected slots:
 
-    void keyPressEvent(QKeyEvent* keyEvent) override;
+    /*
+     * Copies the current decimal value of this widget to the clipboard
+     */
+    void copyValueToClipboard() override;
 
-    void focusInEvent(QFocusEvent* focusEvent) override;
+    /*
+     * Pastes a decimal value from clipboard to populate the widget via a call to setValue(...)
+     */
+    void pasteValueFromClipboard() override;
 
-    void focusOutEvent(QFocusEvent* focusEvent) override;
+    /*
+     * Connected to PositionalLineEdit::customContextMenuRequested.
+     * Invoked on a right click event and spawns a custom context menu.
+     * @PARAM const QPoint& pos - The position in widget coordinates that gets mapped to global coordinates to display the context menu at
+     */
+    void showContextMenu(const QPoint& pos) override;
 
-    void paintEvent(QPaintEvent* paintEvent) override;
-
-    void resizeEvent(QResizeEvent* resizeEvent) override;
-
-    void wheelEvent(QWheelEvent* wheelEvent) override;
-
-    void showContextMenu(const QPoint& pos);
-
-    void cursorPositionChangedEvent(int prev, int cur);
-
-    void selectionChangedEvent();
-
-    void copyTextToClipboard();
-
-    void copyDecimalToClipboard();
-
-    void pasteAsDecimalFromClipboard();
-
-    void clearText();
+    /*
+     * Zeroes out all of the RangeInts and resets undisplayed precision to 0
+     */
+    void clearText() override;
 
 public:
 
-    QList<Range*> m_ranges;
-
-    //This determines if m_decimals should exist
-    int       m_decimals;
-    double    m_undisplayedPrecision;
-    int       m_maxAllowableValue;    
-    int       m_prevCursorPosition;
-
-    QPointer<TrianglePaintedButton> m_incrementButton;
-    QPointer<TrianglePaintedButton> m_decrementButton;
-
-    QPointer<QMenu> m_customContextMenu;
-    QAction*        m_copyAsTextToClipBoardAction;
-    QAction*        m_copyAsDecimalToClipBoardAction;
-    QAction*        m_pasteAsDecimalFromClipBoardAction;
-    QAction*        m_clearAction;
+    double m_undisplayedPrecision;
 
     RangeChar*           m_degreeChar;
     RangeInt*            m_degreeInt;
@@ -128,9 +101,6 @@ public:
     RangeStringConstant* m_minuteSymbol;
     RangeInt*            m_secondsInt;
     RangeStringConstant* m_secondSymbol;
-    RangeInt*            m_decimalRange;
-
-    QColor               m_highlightColor;
 
 };
 

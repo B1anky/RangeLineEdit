@@ -2,8 +2,11 @@
 #include "TrianglePaintedButton.h"
 #include "Ranges.h"
 
-LatitudeLineEdit::LatitudeLineEdit(int decimals, QWidget* parent)
-    : PositionalLineEdits(parent)
+/*
+ * Value Constructor
+ */
+LatitudeLineEdit::LatitudeLineEdit(QWidget* parent, int decimals)
+    : PositionalLineEdit(parent)
 {
 
     m_degreeChar   = new RangeChar('S', 'N');

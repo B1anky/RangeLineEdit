@@ -17,15 +17,15 @@ MainWindow::MainWindow(QWidget* parent)
     centralWidget->setLayout(centralVLayout);
 
     QHBoxLayout*       lineEditLayout    = new QHBoxLayout;
-    LatitudeLineEdit*  latitudeLineEdit  = new LatitudeLineEdit(2);
-    LongitudeLineEdit* longitudeLineEdit = new LongitudeLineEdit(2);
+    LatitudeLineEdit*  latitudeLineEdit  = new LatitudeLineEdit(nullptr, 2);
+    LongitudeLineEdit* longitudeLineEdit = new LongitudeLineEdit(nullptr, 2);
     lineEditLayout->addWidget(latitudeLineEdit);
     lineEditLayout->addWidget(longitudeLineEdit);
     centralVLayout->addLayout(lineEditLayout);
 
     QHBoxLayout*       lineEditLayoutError    = new QHBoxLayout;
-    LatitudeLineEdit*  latitudeLineEditError  = new LatitudeLineEdit(2);
-    LongitudeLineEdit* longitudeLineEditError = new LongitudeLineEdit(2);
+    LatitudeLineEdit*  latitudeLineEditError  = new LatitudeLineEdit(nullptr, 2);
+    LongitudeLineEdit* longitudeLineEditError = new LongitudeLineEdit(nullptr, 2);
     lineEditLayoutError->addWidget(latitudeLineEditError);
     lineEditLayoutError->addWidget(longitudeLineEditError);
     centralVLayout     ->addLayout(lineEditLayoutError);
@@ -61,29 +61,29 @@ MainWindow::MainWindow(QWidget* parent)
     centralVLayout->addLayout(setValueLayout);
 
     connect(setLatitudeFromDecimalButton, &QPushButton::clicked, this, [this, latitudeLineEdit, latitudeSpinBox](){
-        latitudeLineEdit->setTextFromDecimalValue(latitudeSpinBox->value());
+        latitudeLineEdit->setValue(latitudeSpinBox->value());
     }, Qt::DirectConnection);
 
     connect(setLongitudeFromDecimalButton, &QPushButton::clicked, this, [this, longitudeLineEdit, longitudeSpinBox](){
-        longitudeLineEdit->setTextFromDecimalValue(longitudeSpinBox->value());
+        longitudeLineEdit->setValue(longitudeSpinBox->value());
     }, Qt::DirectConnection);
 
     connect(latitudeLineEdit, &QLineEdit::textChanged, this, [this, latitudeLineEdit, latitudeDecimalLabel, latitudeLineEditError](){
-        latitudeDecimalLabel->setText(QString::number(latitudeLineEdit->textToDecimalValue(), 'f', 10));
-        latitudeLineEditError->setTextFromDecimalValue(latitudeLineEdit->textToDecimalValue());
+        latitudeDecimalLabel->setText(QString::number(latitudeLineEdit->value(), 'f', 10));
+        latitudeLineEditError->setValue(latitudeLineEdit->value());
     }, Qt::DirectConnection);
 
     connect(latitudeLineEditError, &QLineEdit::textChanged, this, [this, latitudeLineEditError, latitudeDecimalLabelSecondary](){
-        latitudeDecimalLabelSecondary->setText(QString::number(latitudeLineEditError->textToDecimalValue(), 'f', 10));
+        latitudeDecimalLabelSecondary->setText(QString::number(latitudeLineEditError->value(), 'f', 10));
     }, Qt::DirectConnection);
 
     connect(longitudeLineEditError, &QLineEdit::textChanged, this, [this, longitudeLineEditError, longitudeDecimalLabelSecondary](){
-        longitudeDecimalLabelSecondary->setText(QString::number(longitudeLineEditError->textToDecimalValue(), 'f', 10));
+        longitudeDecimalLabelSecondary->setText(QString::number(longitudeLineEditError->value(), 'f', 10));
     }, Qt::DirectConnection);
 
     connect(longitudeLineEdit, &QLineEdit::textChanged, this, [this, longitudeLineEdit, longitudeDecimalLabel, longitudeLineEditError](){
-        longitudeDecimalLabel->setText(QString::number(longitudeLineEdit->textToDecimalValue(), 'f', 10));
-        longitudeLineEditError->setTextFromDecimalValue(longitudeLineEdit->textToDecimalValue());
+        longitudeDecimalLabel->setText(QString::number(longitudeLineEdit->value(), 'f', 10));
+        longitudeLineEditError->setValue(longitudeLineEdit->value());
     }, Qt::DirectConnection);
 
 }

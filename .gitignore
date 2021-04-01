@@ -3,3 +3,4 @@ release/
 *Makefile*
 .qmake.stash
 object_script.*
+*.pro.*
