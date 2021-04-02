@@ -39,10 +39,28 @@ DoubleLineEdit::DoubleLineEdit(QWidget* parent, int decimals)
     syncRangeEdges();
 
     m_maxAllowableValue = m_doubleInt->m_range;
-    setPrecision(decimals);
+    RangeLineEdit::setPrecision(decimals);
 
     setCursorPosition(0);
     setMinimumWidth(QFontMetrics(font()).horizontalAdvance(text()) + m_incrementButton->width());
+
+}
+
+/*
+ * Convenience function for dynamically changing the precision of the decimals.
+ * Overridden to appropriately limit the m_doubleInt's maximum range such that large values don't truncate decimal precision
+ * when converting the underlying value of the all Ranges back to a standard long double.
+ */
+void DoubleLineEdit::setPrecision(int decimals){
+
+    //This needs to be done prior to clearing and resyncing, but we're sure it'll succeed if the decimals >= 0
+    if(decimals >= 0){
+
+        m_doubleInt->setRange(std::numeric_limits<long long>::max() / (10000LL * std::pow(10LL, decimals + 1)));
+
+    }
+
+    RangeLineEdit::setPrecision(decimals);
 
 }
 

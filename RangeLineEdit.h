@@ -89,7 +89,7 @@ public:
      */
     ~RangeLineEdit(){
 
-            clearCurrentValidators();
+        clearCurrentValidators();
 
     }
 
@@ -97,38 +97,37 @@ public:
      * Convenience function for dynamically changing the precision of the decimals.
      * @PARAM int decimals - Decimal precision to be displayed. Can be set to 0 which will remove precision values, if already set.
      */
-    void setPrecision(int decimals){
+    virtual void setPrecision(int decimals){
 
         if(m_decimals != decimals && decimals > 0){
 
             m_decimals = decimals;
             int currentCursorPos = this->cursorPosition();
 
+            long long prevDivisor = 1LL;
+            for(int i = m_ranges.size() - 1; i >= 0; --i){
+
+                if(m_ranges.at(i)->rangeType() == "RangeInt" && m_ranges.at(i) != m_decimalRange){
+
+                    prevDivisor = m_ranges.at(i)->divisor();
+                    break;
+
+                }
+
+            }
+
             //Generally this occurs if we're setting our type for the first time or changing our type dynamically
             if(m_decimalRange == nullptr){
 
                 m_decimalString = new RangeStringConstant(".");
-
-                long long prevDivisor = 1LL;
-                for(int i = m_ranges.size() - 1; i >= 0; --i){
-
-                    if(m_ranges.at(i)->rangeType() == "RangeInt"){
-
-                        prevDivisor = m_ranges.at(i)->divisor();
-                        break;
-
-                    }
-
-                }
-
-                m_decimalRange = new RangeInt(m_decimals, std::pow(10LL, m_decimals) * prevDivisor);
+                m_decimalRange  = new RangeInt(std::pow(10LL, m_decimals) - 1LL, std::pow(10LL, m_decimals) * prevDivisor);
 
                 //Production::Note: If the final Range type in the current m_ranges list when initialized is a RangeStringConstant (i.e. a " '' "),
                 //then they are probably attempting to make the decimal apply to its closest RangeInt, so we want to pop the previous tail,
                 //append our new string constant for the decimal point and RangeInt for the decimals, then append the previous tail back on
                 ::Range* secondSymbol = nullptr;
 
-                //We have to pop the " '' " seconds symbol off the back and move it to the right of the decimal ranges
+                //For example, we may have to pop something like " '' " from a seconds symbol off the back and move it to the right of the decimal ranges
                 if(m_ranges.empty() == false && m_ranges.last()->rangeType() == "RangeStringConstant"){
 
                     secondSymbol = m_ranges.last();
@@ -147,12 +146,10 @@ public:
 
             }
 
-            m_decimalRange->m_range = std::pow(10, m_decimals) - 1;
+            m_decimalRange->setRange(std::pow(10LL, m_decimals) - 1LL);
+            m_decimalRange->setDivisor(std::pow(10LL, m_decimals) * prevDivisor);
 
-            QString curText = text();
-            curText = curText.split(".").first();
-            curText += "." + QString("0").repeated(m_decimals - m_decimalRange->valueLength()) + m_decimalRange->valueStr();
-
+            clear();
             syncRangeEdges();
 
             setCursorPosition(currentCursorPos);
@@ -162,6 +159,7 @@ public:
         else if(decimals == 0 && m_decimalRange != nullptr){
 
             Range* currentTail = nullptr;
+            m_decimals = decimals;
 
             //Pop the Seconds String Constant, the decimal Range, and the decimal String Constant
             if(m_ranges.isEmpty() == false && m_ranges.last()->rangeType() == "RangeStringConstant"){
@@ -446,7 +444,7 @@ protected:
 
         }
 
-        scrapeDirtiedRanges();
+        scrapeDirtiedRanges(true);
 
     }
 

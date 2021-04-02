@@ -72,6 +72,13 @@ void MainWindow::setupDMSWidget(){
     setValueLayout->addWidget(longitudeSpinBox);
     centralVLayout->addLayout(setValueLayout);
 
+    QHBoxLayout* decimalPrecisionSpinBoxLayout = new QHBoxLayout;
+    QSpinBox*    latitudeDecimalSpinBox        = new QSpinBox;
+    QSpinBox*    longitudeDecimalSpinBox       = new QSpinBox;
+    decimalPrecisionSpinBoxLayout->addWidget(latitudeDecimalSpinBox);
+    decimalPrecisionSpinBoxLayout->addWidget(longitudeDecimalSpinBox);
+    centralVLayout->addLayout(decimalPrecisionSpinBoxLayout);
+
     connect(setLatitudeFromDecimalButton, &QPushButton::clicked, this, [this, latitudeLineEdit, latitudeSpinBox](){
         latitudeLineEdit->setValue(latitudeSpinBox->value());
     }, Qt::DirectConnection);
@@ -96,6 +103,14 @@ void MainWindow::setupDMSWidget(){
     connect(longitudeLineEdit, &PositionalLineEdit::valueChanged, this, [this, longitudeLineEdit, longitudeDecimalLabel, longitudeLineEditError](double value){
         longitudeDecimalLabel->setText(QString::number(value, 'f', 10));
         longitudeLineEditError->setValue(longitudeLineEdit->value());
+    }, Qt::DirectConnection);
+
+    connect(latitudeDecimalSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this, latitudeLineEdit](int value){
+        latitudeLineEdit->setPrecision(value);
+    }, Qt::DirectConnection);
+
+    connect(longitudeDecimalSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this, longitudeLineEdit](int value){
+        longitudeLineEdit->setPrecision(value);
     }, Qt::DirectConnection);
 
     m_tabWidget->addTab(m_dmsWidget, "DMS");
@@ -135,6 +150,14 @@ void MainWindow::setupDoubleWidget(){
     setValueLayout->addWidget(doubleSpinBox);
     centralVLayout->addLayout(setValueLayout);
 
+    QHBoxLayout* decimalPrecisionSpinBoxLayout     = new QHBoxLayout;
+    QSpinBox*    doubleLineEditDecimalSpinBox      = new QSpinBox;
+    QSpinBox*    doubleLineEditDecimalErrorSpinBox = new QSpinBox;
+    decimalPrecisionSpinBoxLayout->addWidget(doubleLineEditDecimalSpinBox);
+    decimalPrecisionSpinBoxLayout->addWidget(doubleLineEditDecimalErrorSpinBox);
+    centralVLayout->addLayout(decimalPrecisionSpinBoxLayout);
+
+
     connect(setDoubleFromDecimalButton, &QPushButton::clicked, this, [this, doubleLineEdit, doubleSpinBox](){
         doubleLineEdit->setValue(doubleSpinBox->value());
     }, Qt::DirectConnection);
@@ -146,6 +169,14 @@ void MainWindow::setupDoubleWidget(){
 
     connect(doubleLineEditError, &DoubleLineEdit::valueChanged, this, [this, doubleLineEditError, doubleLineEditLabelSecondary](){
         doubleLineEditLabelSecondary->setText(QString::number(doubleLineEditError->value(), 'f', 10));
+    }, Qt::DirectConnection);
+
+    connect(doubleLineEditDecimalSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this, doubleLineEdit](int value){
+        doubleLineEdit->setPrecision(value);
+    }, Qt::DirectConnection);
+
+    connect(doubleLineEditDecimalErrorSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this, doubleLineEditError](int value){
+        doubleLineEditError->setPrecision(value);
     }, Qt::DirectConnection);
 
     m_tabWidget->addTab(m_doubleWidget, "Double");

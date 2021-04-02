@@ -23,6 +23,14 @@ public:
     DoubleLineEdit(QWidget* parent = nullptr, int decimals = 2);
 
     /*
+     * Convenience function for dynamically changing the precision of the decimals.
+     * Overridden to appropriately limit the m_doubleInt's maximum range such that large values don't truncate decimal precision
+     * when converting the underlying value of the all Ranges back to a standard long double.
+     * @PARAM int decimals - Decimal precision to be displayed. Can be set to 0 which will remove precision values, if already set.
+     */
+    void setPrecision(int decimals) override;
+
+    /*
      * Calls base class implementation, and if successful will reset undisplayed precision to 0
      * @PARAM const QChar& value - The String to set at the given index
      * @PARAM int          index - The index used to lookup the held Range

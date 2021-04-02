@@ -84,8 +84,8 @@ void PositionalLineEdit::setValue(double value){
 
     if(m_decimalRange != nullptr){
 
-        //Production::Note: m_decimalRange->m_range == std::pow(10, m_decimals) - 1, so we need to divide cleanly by 10, 100, 1000, etc., not 9, 99, 999
-        decimalSecondsNotTruncated = (secondsNotTruncated - seconds) * (m_decimalRange->m_range + 1.0);
+        //Production::Note: m_decimalRange->m_range == std::pow(10LL, m_decimals) - 1LL, so we need to divide cleanly by 10, 100, 1000, etc., not 9, 99, 999
+        decimalSecondsNotTruncated = (secondsNotTruncated - seconds) * (m_decimalRange->m_range + 1.0L);
         decimalSeconds             = std::floor(decimalSecondsNotTruncated);
 
     }
@@ -98,7 +98,7 @@ void PositionalLineEdit::setValue(double value){
     m_minuteInt->m_value  = minutes;
     m_secondsInt->m_value = seconds;
 
-    double minimumDecimalValue(1.0 / m_secondsInt->m_divisor);
+    long double minimumDecimalValue(1.0L / m_secondsInt->divisor());
 
     //If the user hasn't specified decimals, we need to ignore its value in determining precision loss
     if(m_decimalRange != nullptr){
@@ -106,7 +106,7 @@ void PositionalLineEdit::setValue(double value){
         m_decimalRange->m_value = decimalSeconds;
 
         //Production::Note: The below episolon scales with how many decimals are being used, so it's completely dynamic
-        minimumDecimalValue = (1.0 / (3600.0 * (m_decimalRange->m_range + 1.0)));
+        minimumDecimalValue = (1.0L / (m_secondsInt->divisor() * (m_decimalRange->m_range + 1.0)));
 
     }
 
