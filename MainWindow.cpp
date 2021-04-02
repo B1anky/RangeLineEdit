@@ -220,7 +220,6 @@ void MainWindow::setupPhoneWidget(){
     }, Qt::DirectConnection);
 
     connect(phoneNumberLineEdit, &PhoneNumberLineEdit::valueChanged, this, [this, phoneNumberLineEdit, phoneNumberLineEditLabel, phoneNumberLineEditEditError](){
-        qDebug() << phoneNumberLineEdit->value();
         phoneNumberLineEditLabel->setText(phoneNumberLineEdit->value());
         phoneNumberLineEditEditError->setValue(phoneNumberLineEdit->value());
     }, Qt::DirectConnection);
