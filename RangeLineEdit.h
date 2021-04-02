@@ -161,7 +161,7 @@ public:
             Range* currentTail = nullptr;
             m_decimals = decimals;
 
-            //Pop the Seconds String Constant, the decimal Range, and the decimal String Constant
+            //Pop the trailing String Constant (if applicable), the decimal Range, and the decimal String Constant
             if(m_ranges.isEmpty() == false && m_ranges.last()->rangeType() == "RangeStringConstant"){
 
                 currentTail = m_ranges.last();
@@ -178,6 +178,7 @@ public:
             m_decimalString = nullptr;
             m_decimalRange  = nullptr;
 
+            //Reappend the previous Range String Constant back on
             if(currentTail != nullptr){
 
                 m_ranges << currentTail;
