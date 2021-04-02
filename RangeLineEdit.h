@@ -985,9 +985,6 @@ protected slots:
     void cursorPositionChangedEvent(int, int cur){
 
         ::Range* range = getRangeForIndex(cur);
-        while(range == nullptr && cur > text().length()){
-            range = getRangeForIndex(--cur);
-        }
         if(range != nullptr && range->rangeType() == "RangeStringConstant"){
 
             //Go to the left, if possible, otherwise fall back to the right
@@ -1000,6 +997,12 @@ protected slots:
                 setCursorPosition(range->m_rightRange->m_charIndexStart);
 
             }
+
+        }
+        //In the case we don't have a RangeStringConstant at the end
+        else if(cur == text().length()){
+
+            setCursorPosition(cur - 1);
 
         }
 
