@@ -27,16 +27,16 @@ public:
     PhoneNumberLineEdit(QWidget* parent = nullptr, bool enableCountryCode = false, int countryCodeRangeSigFigs = 0);
 
     /*
-     * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value
+     * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value.
      * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
      * @PARAM QString value - The value that should be handled to populate the widget's Ranges from its specified derived type
      */
     void setValue(QString value) override;
 
     /*
-     * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value
+     * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value.
      * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
-     * For this type it returns a decimal version of a string
+     * For this type it returns its QLineEdit::text() call as a plain QString
      */
     QString value() override;
 
@@ -57,17 +57,17 @@ protected:
 protected slots:
 
     /*
-     * Copies the current decimal value of this widget to the clipboard
+     * Copies the current string value of this widget to the clipboard
      */
     void copyValueToClipboard() override;
 
     /*
-     * Pastes a decimal value from clipboard to populate the widget via a call to setValue(...)
+     * Pastes a string or integer value from clipboard to populate the widget via a call to setValue(...)
      */
     void pasteValueFromClipboard() override;
 
     /*
-     * Wraps a call to valueChanged(double) signal
+     * Wraps a call to valueChanged(const QString&) signal
      */
     void valueChangedPrivate() override;
 

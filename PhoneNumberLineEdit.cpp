@@ -146,9 +146,9 @@ void PhoneNumberLineEdit::setValue(QString value){
 }
 
 /*
- * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value
+ * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value.
  * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
- * For this type it returns a decimal version of a string
+ * For this type it returns its QLineEdit::text() call as a plain QString
  */
 QString PhoneNumberLineEdit::value(){
 
@@ -157,7 +157,7 @@ QString PhoneNumberLineEdit::value(){
 }
 
 /*
- * Convenience function to dynamically enable or modify the country code RangeInt
+ * Convenience function to dynamically enabling or modifying the country code RangeInt
  */
 bool PhoneNumberLineEdit::enableCountryCode(bool enableCountryCode, int countryCodeRangeSigFigs){
 
@@ -263,7 +263,7 @@ void PhoneNumberLineEdit::showContextMenu(const QPoint& pos){
 /* --- Protected Slots ---*/
 
 /*
- * Copies the current decimal value of this widget to the clipboard
+ * Copies the current string value of this widget to the clipboard
  */
 void PhoneNumberLineEdit::copyValueToClipboard(){
 
@@ -277,7 +277,7 @@ void PhoneNumberLineEdit::copyValueToClipboard(){
 }
 
 /*
- * Pastes a decimal value from clipboard to populate the widget via a call to setValue(...)
+ * Pastes a string or integer value from clipboard to populate the widget via a call to setValue(...)
  */
 void PhoneNumberLineEdit::pasteValueFromClipboard(){
 
@@ -299,7 +299,7 @@ void PhoneNumberLineEdit::pasteValueFromClipboard(){
 }
 
 /*
- * Wraps a call to valueChanged(long double) signal
+ * Wraps a call to valueChanged(const QString&) signal
  */
 void PhoneNumberLineEdit::valueChangedPrivate(){
 
