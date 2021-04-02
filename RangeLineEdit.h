@@ -106,8 +106,15 @@ public:
             //Generally this occurs if we're setting our type for the first time or changing our type dynamically
             if(m_decimalRange == nullptr){
 
-                m_decimalString = new RangeStringConstant(".");
-                m_decimalRange  = new RangeInt(m_decimals, std::pow(10, m_decimals) * 60 * 60);
+                m_decimalString = new RangeStringConstant(".");                
+                int prevDivisor = 1;
+                for(int i = m_ranges.size() - 1; i >= 0; --i){
+                    if(m_ranges.at(i)->rangeType() == "RangeInt"){
+                        prevDivisor = m_ranges.at(i)->divisor();
+                        break;
+                    }
+                }
+                m_decimalRange = new RangeInt(m_decimals, std::pow(10, m_decimals) * prevDivisor);
 
                 //Production::Note: If the final Range type in the current m_ranges list when initialized is a RangeStringConstant (i.e. a " '' "),
                 //then they are probably attempting to make the decimal apply to its closest RangeInt, so we want to pop the previous tail,
@@ -885,7 +892,7 @@ protected slots:
         QLineEdit::paintEvent(paintEvent);
 
         //Below highlights the current text that has focus in the widget and will be affected by an increment, decrement, or key press operation
-        if( (this->hasFocus() || m_incrementButton->underMouse() || m_decrementButton->underMouse()) && cursorPosition() < text().length() - 1){
+        if( (this->hasFocus() || m_incrementButton->underMouse() || m_decrementButton->underMouse()) && cursorPosition() <= text().length() - 1){
 
             QPainter painter(this);
             painter.setPen(QPen(QColor(255, 255, 255, 0)));
@@ -978,6 +985,9 @@ protected slots:
     void cursorPositionChangedEvent(int, int cur){
 
         ::Range* range = getRangeForIndex(cur);
+        while(range == nullptr && cur > text().length()){
+            range = getRangeForIndex(--cur);
+        }
         if(range != nullptr && range->rangeType() == "RangeStringConstant"){
 
             //Go to the left, if possible, otherwise fall back to the right

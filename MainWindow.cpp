@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 #include "LatitudeLineEdit.h"
 #include "LongitudeLineEdit.h"
+#include "DoubleLineEdit.h"
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -10,11 +11,20 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
 
-    QWidget* centralWidget = new QWidget;
-    setCentralWidget(centralWidget);
+    m_tabWidget = new QTabWidget;
+    setCentralWidget(m_tabWidget);
+
+    setupDMSWidget();
+    setupDoubleWidget();
+
+}
+
+void MainWindow::setupDMSWidget(){
+
+    m_dmsWidget = new QWidget;
 
     QVBoxLayout* centralVLayout = new QVBoxLayout;
-    centralWidget->setLayout(centralVLayout);
+    m_dmsWidget->setLayout(centralVLayout);
 
     QHBoxLayout*       lineEditLayout    = new QHBoxLayout;
     LatitudeLineEdit*  latitudeLineEdit  = new LatitudeLineEdit(nullptr, 2);
@@ -85,6 +95,58 @@ MainWindow::MainWindow(QWidget* parent)
         longitudeDecimalLabel->setText(QString::number(longitudeLineEdit->value(), 'f', 10));
         longitudeLineEditError->setValue(longitudeLineEdit->value());
     }, Qt::DirectConnection);
+
+    m_tabWidget->addTab(m_dmsWidget, "DMS");
+
+}
+
+void MainWindow::setupDoubleWidget(){
+
+    m_doubleWidget = new QWidget;
+
+    QVBoxLayout* centralVLayout = new QVBoxLayout;
+    m_doubleWidget->setLayout(centralVLayout);
+
+    QHBoxLayout*    lineEditLayout      = new QHBoxLayout;
+    DoubleLineEdit* doubleLineEdit      = new DoubleLineEdit(nullptr, 2);
+    DoubleLineEdit* doubleLineEditError = new DoubleLineEdit(nullptr, 2);
+    lineEditLayout->addWidget(doubleLineEdit);
+    lineEditLayout->addWidget(doubleLineEditError);
+    centralVLayout->addLayout(lineEditLayout);
+
+    QHBoxLayout* decimalLabelLayout           = new QHBoxLayout;
+    QLabel*      doubleLineEditLabel          = new QLabel;
+    QLabel*      doubleLineEditLabelSecondary = new QLabel;
+
+    decimalLabelLayout->addWidget(doubleLineEditLabel);
+    decimalLabelLayout->addWidget(doubleLineEditLabelSecondary);
+    centralVLayout    ->addLayout(decimalLabelLayout);
+
+    QHBoxLayout*    setValueLayout             = new QHBoxLayout;
+    QPushButton*    setDoubleFromDecimalButton = new QPushButton("Set Double");
+    QDoubleSpinBox* doubleSpinBox              = new QDoubleSpinBox;
+
+    doubleSpinBox->setRange(-INT_MAX, INT_MAX);
+    doubleSpinBox->setDecimals(8);
+
+    setValueLayout->addWidget(setDoubleFromDecimalButton);
+    setValueLayout->addWidget(doubleSpinBox);
+    centralVLayout->addLayout(setValueLayout);
+
+    connect(setDoubleFromDecimalButton, &QPushButton::clicked, this, [this, doubleLineEdit, doubleSpinBox](){
+        doubleLineEdit->setValue(doubleSpinBox->value());
+    }, Qt::DirectConnection);
+
+    connect(doubleLineEdit, &QLineEdit::textChanged, this, [this, doubleLineEdit, doubleLineEditLabel, doubleLineEditError](){
+        doubleLineEditLabel->setText(QString::number(doubleLineEdit->value(), 'f', 10));
+        doubleLineEditError->setValue(doubleLineEdit->value());
+    }, Qt::DirectConnection);
+
+    connect(doubleLineEditError, &QLineEdit::textChanged, this, [this, doubleLineEditError, doubleLineEditLabelSecondary](){
+        doubleLineEditLabelSecondary->setText(QString::number(doubleLineEditError->value(), 'f', 10));
+    }, Qt::DirectConnection);
+
+    m_tabWidget->addTab(m_doubleWidget, "Double");
 
 }
 
