@@ -14,7 +14,7 @@ Usage:
 #include "LatitudeLineEdit.h"
 
 int decimalPrecision(4);
-LatitudeLineEdit* latitudeLineEdit = new LatitudeLineEdit(decimalPrecision);
+LatitudeLineEdit* latitudeLineEdit = new LatitudeLineEdit(nullptr, decimalPrecision);
 
 double decimalDegree = 47.55;
 latitudeLineEdit->setValue(decimalDegree);
