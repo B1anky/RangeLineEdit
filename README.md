@@ -38,3 +38,7 @@ assert(std::fabs(decimalDegree - storedValue) < 0.000001);
 ```
 
 To make you own type, you need to subclass RangeLineEdit and give it a derived type of your choosing (Any custom class will work). Afterwards, there a handful of functions you HAVE to override in the subclass to make your type non-abstract. Generally, your subtype will have to convert your template parameterized value into something the Range subtypes can represent.
+
+![DMSWidgets](https://user-images.githubusercontent.com/10680188/113449253-6cec4600-93cb-11eb-8853-21e3f8a6f161.PNG)
+![DoubleWidgets](https://user-images.githubusercontent.com/10680188/113449255-6d84dc80-93cb-11eb-9771-f1564709d893.PNG)
+![PhoneWidgets](https://user-images.githubusercontent.com/10680188/113449256-6d84dc80-93cb-11eb-9c47-8deae85d6eb8.PNG)
