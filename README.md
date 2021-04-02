@@ -6,6 +6,9 @@ This can technically be expanded for any use case, including a phone number vali
 Hello! Welcome to the first fully functioning Latitude and Longitude DMS widget suite. 
 This widget allows you to create editable QLineEdits that support user input, key press events, and mouse wheel events.
 
+There is now also a DoubleLineEdit that allows you to manipulate a +/- decimal value with a standard dot notation,
+much like Qt's QDoubleSpinBox, but has all of the features inherited from RangeLineEdit.
+
 Usage:
 ```
 #include "LatitudeLineEdit.h"
@@ -14,10 +17,11 @@ int decimalPrecision(4);
 LatitudeLineEdit* latitudeLineEdit = new LatitudeLineEdit(decimalPrecision);
 
 double decimalDegree = 47.55;
-latitudeLineEdit->setTextFromDecimalValue(decimalDegree);
-//The widget now should display: N47°33'00.00000''
+latitudeLineEdit->setValue(decimalDegree);
+//The widget now should display: N47°33'00.00000'' and would've emitted both
+//a QLineEdit::TextChanged signal and a PositionalLineEdit::valueChanged signal.
 
-double storedValue = latitudeLineEdit->textToDecimalValue();
+double storedValue = latitudeLineEdit->value();
 
 assert(std::fabs(decimalDegree - storedValue) < 0.000001);
 
