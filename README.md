@@ -18,7 +18,7 @@ LatitudeLineEdit* latitudeLineEdit = new LatitudeLineEdit(decimalPrecision);
 
 double decimalDegree = 47.55;
 latitudeLineEdit->setValue(decimalDegree);
-//The widget now should display: N47°33'00.00000'' and would've emitted both
+//The widget now should display: N47°33'00.0000'' and would've emitted both
 //a QLineEdit::TextChanged signal and a PositionalLineEdit::valueChanged signal.
 
 double storedValue = latitudeLineEdit->value();
