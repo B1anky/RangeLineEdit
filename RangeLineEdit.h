@@ -855,55 +855,7 @@ protected slots:
 
         }//Production::Note: Don't even think about adding another `else if` below here
 
-    }
-
-    /*
-     * Overridden QFocusEvent
-     * Clears the widget on focus-in and repopulates it.
-     * Done to ensure if an outside widget or progrmmatic functionality
-     * erroneously called setText(...) on this widget, that it will reconstruct the displayed text properly
-     * @PARAM QFocusEvent* focusEvent - Standard Qt QFocusEvent
-     */
-    void focusInEvent(QFocusEvent* focusEvent) override{
-
-        int focusIndex = cursorPosition();
-
-        //This serves to make sure if the user somehow improperly called setText from another context and didn't use the supplied
-        //RangeLineEdits::setValue(...), that we will clear the text and reconstruct the string on focusIn.
-        blockSignals(true);
-        clear();
-        blockSignals(false);
-        scrapeDirtiedRanges(true);
-
-        setCursorPosition(focusIndex);
-
-        QLineEdit::focusInEvent(focusEvent);
-
-    }
-
-    /*
-     * Overridden QFocusEvent
-     * Clears the widget on focus-out and repopulates it.
-     * Done to ensure if an outside widget or progrmmatic functionality
-     * erroneously called setText(...) on this widget, that it will reconstruct the displayed text properly
-     * @PARAM QFocusEvent* focusEvent - Standard Qt QFocusEvent
-     */
-    void focusOutEvent(QFocusEvent* focusEvent) override{
-
-        int focusIndex = cursorPosition();
-
-        //This serves to make sure if the user somehow improperly called setText from another context and didn't use the supplied
-        //RangeLineEdits::setValue(...), that we will clear the text and reconstruct the string on focusOut.
-        blockSignals(true);
-        clear();
-        blockSignals(false);
-        scrapeDirtiedRanges(true);
-
-        setCursorPosition(focusIndex);
-
-        QLineEdit::focusOutEvent(focusEvent);
-
-    }
+    }    
 
     /*
      * Overridden QPaintEvent
@@ -1108,6 +1060,19 @@ protected slots:
         scrapeDirtiedRanges();
 
         setCursorPosition(focusIndex);
+
+    }
+
+private:
+
+    /*
+     * Making QLineEdit::setText private so outside users can't
+     * accidentally improperly call setText, rather than setValue.
+     * @PARAM const QString& valString - The value the base class will show
+     */
+    void setText(const QString& valString){
+
+        QLineEdit::setText(valString);
 
     }
 

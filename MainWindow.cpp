@@ -31,6 +31,7 @@ void MainWindow::setupDMSWidget(){
     QHBoxLayout*       lineEditLayout    = new QHBoxLayout;
     LatitudeLineEdit*  latitudeLineEdit  = new LatitudeLineEdit(nullptr, 5);
     LongitudeLineEdit* longitudeLineEdit = new LongitudeLineEdit(nullptr, 2);
+
     lineEditLayout->addWidget(latitudeLineEdit);
     lineEditLayout->addWidget(longitudeLineEdit);
     centralVLayout->addLayout(lineEditLayout);
