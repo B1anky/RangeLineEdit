@@ -9,7 +9,7 @@
  * Supports a standard double styled formatting for the QLineEdit. (i.e. -∞.xxx to +∞.xxx).
  * Allows getting and setting double values directly, in addition to copying and pasting the value from clipboard.
  */
-class DoubleLineEdit : public RangeLineEdit<double>{
+class DoubleLineEdit : public RangeLineEdit<long double>{
 
     Q_OBJECT
 
@@ -34,14 +34,14 @@ public:
      * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
      * @PARAM double value - The value that should be handled to populate the widget's Ranges from its specified derived type
      */
-    void setValue(double value) override;
+    void setValue(long double value) override;
 
     /*
      * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value
      * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
      * For this type it returns a decimal version of a string
      */
-    double value() override;
+    long double value() override;
 
 protected:
 
@@ -79,6 +79,11 @@ protected slots:
     void pasteValueFromClipboard() override;
 
     /*
+     * Wraps a call to valueChanged(long double) signal
+     */
+    void valueChangedPrivate() override;
+
+    /*
      * Connected to PositionalLineEdit::customContextMenuRequested.
      * Invoked on a right click event and spawns a custom context menu.
      * @PARAM const QPoint& pos - The position in widget coordinates that gets mapped to global coordinates to display the context menu at
@@ -90,9 +95,17 @@ protected slots:
      */
     void clearText() override;
 
+signals:
+
+    /*
+     * Type specific signal that emits a Qt-like valueChanged signal when any instance of setValue changes
+     * @PARAM long double value - The current value() of this widget, emits when the internal value was modified
+     */
+    void valueChanged(long double value);
+
 public:
 
-    double m_undisplayedPrecision;
+    long double m_undisplayedPrecision;
 
     RangeChar* m_signChar;
     RangeInt*  m_doubleInt;

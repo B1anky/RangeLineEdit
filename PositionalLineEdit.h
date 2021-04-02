@@ -32,7 +32,7 @@ public:
     /*
      * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value
      * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
-     * @PARAM double value - The value that should be handled to populate the widget's Ranges from its specified derived type
+     * @PARAM long double value - The value that should be handled to populate the widget's Ranges from its specified derived type
      */
     void setValue(double value) override;
 
@@ -79,6 +79,11 @@ protected slots:
     void pasteValueFromClipboard() override;
 
     /*
+     * Wraps a call to valueChanged(double) signal
+     */
+    void valueChangedPrivate() override;
+
+    /*
      * Connected to PositionalLineEdit::customContextMenuRequested.
      * Invoked on a right click event and spawns a custom context menu.
      * @PARAM const QPoint& pos - The position in widget coordinates that gets mapped to global coordinates to display the context menu at
@@ -89,6 +94,14 @@ protected slots:
      * Zeroes out all of the RangeInts and resets undisplayed precision to 0
      */
     void clearText() override;
+
+signals:
+
+    /*
+     * Type specific signal that emits a Qt-like valueChanged signal when any instance of setValue changes
+     * @PARAM double value - The current value() of this widget, emits when the internal value was modified
+     */
+    void valueChanged(double value);
 
 public:
 

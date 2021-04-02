@@ -7,6 +7,8 @@
 #include <QPushButton>
 #include <QLabel>
 
+#include <limits>
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
@@ -27,7 +29,7 @@ void MainWindow::setupDMSWidget(){
     m_dmsWidget->setLayout(centralVLayout);
 
     QHBoxLayout*       lineEditLayout    = new QHBoxLayout;
-    LatitudeLineEdit*  latitudeLineEdit  = new LatitudeLineEdit(nullptr, 2);
+    LatitudeLineEdit*  latitudeLineEdit  = new LatitudeLineEdit(nullptr, 5);
     LongitudeLineEdit* longitudeLineEdit = new LongitudeLineEdit(nullptr, 2);
     lineEditLayout->addWidget(latitudeLineEdit);
     lineEditLayout->addWidget(longitudeLineEdit);
@@ -78,21 +80,21 @@ void MainWindow::setupDMSWidget(){
         longitudeLineEdit->setValue(longitudeSpinBox->value());
     }, Qt::DirectConnection);
 
-    connect(latitudeLineEdit, &QLineEdit::textChanged, this, [this, latitudeLineEdit, latitudeDecimalLabel, latitudeLineEditError](){
-        latitudeDecimalLabel->setText(QString::number(latitudeLineEdit->value(), 'f', 10));
-        latitudeLineEditError->setValue(latitudeLineEdit->value());
+    connect(latitudeLineEdit, &PositionalLineEdit::valueChanged, this, [this, latitudeLineEdit, latitudeDecimalLabel, latitudeLineEditError](double value){
+        latitudeDecimalLabel->setText(QString::number(value, 'f', 10));
+        latitudeLineEditError->setValue(value);
     }, Qt::DirectConnection);
 
-    connect(latitudeLineEditError, &QLineEdit::textChanged, this, [this, latitudeLineEditError, latitudeDecimalLabelSecondary](){
-        latitudeDecimalLabelSecondary->setText(QString::number(latitudeLineEditError->value(), 'f', 10));
+    connect(latitudeLineEditError, &PositionalLineEdit::valueChanged, this, [this, latitudeLineEditError, latitudeDecimalLabelSecondary](double value){
+        latitudeDecimalLabelSecondary->setText(QString::number(value, 'f', 10));
     }, Qt::DirectConnection);
 
-    connect(longitudeLineEditError, &QLineEdit::textChanged, this, [this, longitudeLineEditError, longitudeDecimalLabelSecondary](){
-        longitudeDecimalLabelSecondary->setText(QString::number(longitudeLineEditError->value(), 'f', 10));
+    connect(longitudeLineEditError, &PositionalLineEdit::valueChanged, this, [this, longitudeLineEditError, longitudeDecimalLabelSecondary](double value){
+        longitudeDecimalLabelSecondary->setText(QString::number(value, 'f', 10));
     }, Qt::DirectConnection);
 
-    connect(longitudeLineEdit, &QLineEdit::textChanged, this, [this, longitudeLineEdit, longitudeDecimalLabel, longitudeLineEditError](){
-        longitudeDecimalLabel->setText(QString::number(longitudeLineEdit->value(), 'f', 10));
+    connect(longitudeLineEdit, &PositionalLineEdit::valueChanged, this, [this, longitudeLineEdit, longitudeDecimalLabel, longitudeLineEditError](double value){
+        longitudeDecimalLabel->setText(QString::number(value, 'f', 10));
         longitudeLineEditError->setValue(longitudeLineEdit->value());
     }, Qt::DirectConnection);
 
@@ -108,7 +110,7 @@ void MainWindow::setupDoubleWidget(){
     m_doubleWidget->setLayout(centralVLayout);
 
     QHBoxLayout*    lineEditLayout      = new QHBoxLayout;
-    DoubleLineEdit* doubleLineEdit      = new DoubleLineEdit(nullptr, 2);
+    DoubleLineEdit* doubleLineEdit      = new DoubleLineEdit(nullptr, 5);
     DoubleLineEdit* doubleLineEditError = new DoubleLineEdit(nullptr, 2);
     lineEditLayout->addWidget(doubleLineEdit);
     lineEditLayout->addWidget(doubleLineEditError);
@@ -126,7 +128,7 @@ void MainWindow::setupDoubleWidget(){
     QPushButton*    setDoubleFromDecimalButton = new QPushButton("Set Double");
     QDoubleSpinBox* doubleSpinBox              = new QDoubleSpinBox;
 
-    doubleSpinBox->setRange(-INT_MAX, INT_MAX);
+    doubleSpinBox->setRange(std::numeric_limits<double>::min(), std::numeric_limits<double>::max());
     doubleSpinBox->setDecimals(8);
 
     setValueLayout->addWidget(setDoubleFromDecimalButton);
@@ -137,12 +139,12 @@ void MainWindow::setupDoubleWidget(){
         doubleLineEdit->setValue(doubleSpinBox->value());
     }, Qt::DirectConnection);
 
-    connect(doubleLineEdit, &QLineEdit::textChanged, this, [this, doubleLineEdit, doubleLineEditLabel, doubleLineEditError](){
+    connect(doubleLineEdit, &DoubleLineEdit::valueChanged, this, [this, doubleLineEdit, doubleLineEditLabel, doubleLineEditError](){
         doubleLineEditLabel->setText(QString::number(doubleLineEdit->value(), 'f', 10));
         doubleLineEditError->setValue(doubleLineEdit->value());
     }, Qt::DirectConnection);
 
-    connect(doubleLineEditError, &QLineEdit::textChanged, this, [this, doubleLineEditError, doubleLineEditLabelSecondary](){
+    connect(doubleLineEditError, &DoubleLineEdit::valueChanged, this, [this, doubleLineEditError, doubleLineEditLabelSecondary](){
         doubleLineEditLabelSecondary->setText(QString::number(doubleLineEditError->value(), 'f', 10));
     }, Qt::DirectConnection);
 

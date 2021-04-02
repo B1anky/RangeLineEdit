@@ -61,6 +61,8 @@ bool PositionalLineEdit::setValueForIndex(const QChar& value, int index){
  */
 void PositionalLineEdit::setValue(double value){
 
+    const double originalValue = PositionalLineEdit::value();
+
     QChar signChar = value >= 0 ? m_degreeChar->m_positiveChar : m_degreeChar->m_negativeChar;
     m_degreeChar->m_value = signChar;
 
@@ -136,9 +138,26 @@ void PositionalLineEdit::setValue(double value){
 
     }
 
+    const QString originalString = text();
 
     syncRangeSigns();
     maximumExceededFixup();
+
+    //If our underlying precision changed, but we can't display the visual change, the text wouldn't have changed
+    //during the calls to the above two functions. As a result, we'd erroneously not emit our value changed,
+    //so if we changed something the user can't see, we still want to emit the signal properly, but ensure we don't blindly
+    //double emit valueChanged for no reason.
+    if(originalString == text()){
+
+       const double newValue = PositionalLineEdit::value();
+
+       if(originalValue != newValue){
+
+           emit valueChanged(newValue);
+
+       }
+
+    }
 
 }
 
@@ -289,6 +308,15 @@ void PositionalLineEdit::pasteValueFromClipboard(){
         }
 
     }
+
+}
+
+/*
+ * Wraps a call to valueChanged(double) signal
+ */
+void PositionalLineEdit::valueChangedPrivate(){
+
+    emit valueChanged(value());
 
 }
 

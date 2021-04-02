@@ -74,7 +74,7 @@ struct Range{
      * The divisor that should be used to generically derive a contextualized numerical value from its base numerical value.
      * This will generally be used via value to contextualize this Range's value against its start and end index location.
      */
-    virtual int divisor() = 0;
+    virtual long long divisor() = 0;
 
     /*
      * Pure virtual
@@ -186,9 +186,9 @@ struct RangeChar : public Range{
     QString rangeType() override;
 
     /*
-     * Unused by this Range type, returns 1 no matter what
+     * Unused by this Range type, returns 1L no matter what
      */
-    int divisor() override;
+    long long divisor() override;
 
     /*
      * Allows you to explicitly set the value to be the positive or negative state.
@@ -264,9 +264,9 @@ struct RangeStringConstant : public Range{
 
     /*
      * Unused by this Range type.
-     * Always returns 1;
+     * Always returns 1L;
      */
-    int divisor() override;
+    long long divisor() override;
 
     /*
      * Unused by this Range type.
@@ -305,35 +305,35 @@ struct RangeInt : public Range{
 
     /*
      * Value Constructor
-     * @PARAM int  range                 - The maximum value of the Range (In both the positive and negative direction)
-     * @PARAM int  divisor               - The divisor of the Range that will divide the stored state's value to be used to construct the
-     *                                     decimal representation of this Range in the context of a PositionalLineEdit::value(...) call
-     * @PARAM bool carryOrBorrowFromLeft - This will determine if this RangeInt will attempt to increment its neighbor, versus just remianing at its maximum value
+     * @PARAM long long range                 - The maximum value of the Range (In both the positive and negative direction)
+     * @PARAM long long divisor               - The divisor of the Range that will divide the stored state's value to be used to construct the
+     *                                          decimal representation of this Range in the context of a PositionalLineEdit::value(...) call
+     * @PARAM bool      carryOrBorrowFromLeft - This will determine if this RangeInt will attempt to increment its neighbor, versus just remianing at its maximum value
      */
-    RangeInt(int range, int divisor, bool carryOrBorrowFromLeft = true);
+    RangeInt(long long range, long long divisor, bool carryOrBorrowFromLeft = true);
 
     /*
      * Convenience function to change the maximum value of the Range dynamically.
      * Ensures if lowering the range that the current stored value is still valid.
-     * @PARAM int range - The maximum value of the Range (In both the positive and negative direction)
+     * @PARAM long long range - The maximum value of the Range (In both the positive and negative direction)
      */
-    bool setRange(int range);
+    bool setRange(long long range);
 
     /*
      * Convenience function to change the divisor of the Range dynamically.
      * This will affect the decimal representation in the context of a PositionalLineEdit::value(...) call.
-     * @PARAM int divisor - The divisor of the Range that will divide the stored state's value to be used to construct the
+     * @PARAM long long divisor - The divisor of the Range that will divide the stored state's value to be used to construct the
      *                      decimal representation of this Range in the context of a PositionalLineEdit::value(...) call
      */
-    bool setDivisor(int divisor);
+    bool setDivisor(long long divisor);
 
     /*
      * Convenience function to help set the value, while ensuring the range limits are being observed, when either positive or negative.
      * For example, if the value is 70, but our range is 59, this will truncate the value to just set 59.
      * This will always be called before adjacent Ranges were incremented accordingly due to what this value is attempting to become.
-     * @PARAM int value - The value to attempt setting our current value to. Will be limited by this RangeInt's range.
+     * @PARAM long long value - The value to attempt setting our current value to. Will be limited by this RangeInt's range.
      */
-    void setValue(int value);
+    void setValue(long long value);
 
     /*
      * Will increment the value at the significant figure's index.
@@ -378,7 +378,7 @@ struct RangeInt : public Range{
      * Returns the divisor of this Range to determine this Range's true decimal value
      * in the context of a PositionalLineEdit::value(...) call
      */
-    int divisor() override;
+    long long divisor() override;
 
     /*
      * Attempts to replace the character of this Range's valueStr() call at index.
@@ -389,10 +389,10 @@ struct RangeInt : public Range{
      */
     bool setValueForIndex(const QChar& value, int index) override;
 
-    int  m_range;
-    int  m_value;
-    int  m_divisor;
-    bool m_carryOrBorrowFromLeft;
+    long long  m_range;
+    long long  m_value;
+    long long  m_divisor;
+    bool       m_carryOrBorrowFromLeft;
 
 };
 

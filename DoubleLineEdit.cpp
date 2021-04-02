@@ -30,7 +30,9 @@ DoubleLineEdit::DoubleLineEdit(QWidget* parent, int decimals)
 {
 
     m_signChar  = new RangeChar('-', '+');
-    m_doubleInt = new RangeInt(INT_MAX, 1);
+    //Production::Note: Can only truly represent from long long -> long double the following range without
+    //losing precision as a result of bit truncation from one type being converted to the other, that's why we divide by ~ 10000
+    m_doubleInt = new RangeInt(std::numeric_limits<long long>::max() / (10000LL * std::pow(10LL, decimals + 1) ), 1LL);
 
     m_ranges << m_signChar << m_doubleInt;
     m_prevCursorPosition = 0;
@@ -53,7 +55,7 @@ bool DoubleLineEdit::setValueForIndex(const QChar& value, int index){
 
     if(successful){
 
-        m_undisplayedPrecision = 0.0;
+        m_undisplayedPrecision = 0.0L;
 
     }
 
@@ -65,7 +67,9 @@ bool DoubleLineEdit::setValueForIndex(const QChar& value, int index){
  * Force the specialized parameratized subclass to have to define how its underling Ranges should be converted to some usable value
  * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
  */
-void DoubleLineEdit::setValue(double value){
+void DoubleLineEdit::setValue(long double value){
+
+    const long double originalValue = DoubleLineEdit::value();
 
     QChar signChar = value >= 0 ? m_signChar->m_positiveChar : m_signChar->m_negativeChar;
     m_signChar->m_value = signChar;
@@ -78,21 +82,21 @@ void DoubleLineEdit::setValue(double value){
 
     }
 
-    double integer             = std::floor(value);
-    double decimalNotTruncated = 0.0;
-    double decimal             = 0.0;
+    long double integer             = std::floor(value);
+    long double decimalNotTruncated = 0.0L;
+    long double decimal             = 0.0L;
 
     if(m_decimalRange != nullptr){
 
         //Production::Note: m_decimalRange->m_range == std::pow(10, m_decimals) - 1, so we need to divide cleanly by 10, 100, 1000, etc., not 9, 99, 999
-        decimalNotTruncated = (value - integer) * (m_decimalRange->m_range + 1.0);
+        decimalNotTruncated = (value - integer) * (m_decimalRange->m_range);
         decimal             = std::floor(decimalNotTruncated);
 
     }
 
     m_doubleInt->m_value = integer;
 
-    double minimumDecimalValue(1.0 / m_doubleInt->m_divisor);
+    long double minimumDecimalValue(m_doubleInt->m_divisor);
 
     //If the user hasn't specified decimals, we need to ignore its value in determining precision loss
     if(m_decimalRange != nullptr){
@@ -100,14 +104,14 @@ void DoubleLineEdit::setValue(double value){
         m_decimalRange->m_value = decimal;
 
         //Production::Note: The below episolon scales with how many decimals are being used, so it's completely dynamic
-        minimumDecimalValue = (1.0 / (3600.0 * (m_decimalRange->m_range + 1.0)));
+        minimumDecimalValue = (1.0L / static_cast<long double>(m_decimalRange->divisor()));
 
     }
 
     //This may or may not include decimal values
     m_undisplayedPrecision = value - sumRangeInts();
 
-    const double epsilonErrorAllowed(minimumDecimalValue / 10.0);
+    const long double epsilonErrorAllowed(minimumDecimalValue / 10.0L);
     if(m_undisplayedPrecision > epsilonErrorAllowed){
 
         //Production::Note: If we found enough error to be greater than the epsilon,
@@ -117,7 +121,7 @@ void DoubleLineEdit::setValue(double value){
         //If we can increment the decimal range it should fix up any visual desync occurring from being off by 1 decimal.
         if((m_decimalRange != nullptr && m_decimalRange->increment(0)) || m_doubleInt->increment(0)){
 
-            if(value >= 0){
+            if(value >= 0.0L){
 
                 //We also need to remove from the undisplayed precision the amount we were able to increment by (Brings is closer to 0)
                 m_undisplayedPrecision -= minimumDecimalValue;
@@ -133,8 +137,26 @@ void DoubleLineEdit::setValue(double value){
 
     }
 
+    const QString originalString = text();
+
     syncRangeSigns();
     maximumExceededFixup();
+
+    //If our underlying precision changed, but we can't display the visual change, the text wouldn't have changed
+    //during the calls to the above two functions. As a result, we'd erroneously not emit our value changed,
+    //so if we changed something the user can't see, we still want to emit the signal properly, but ensure we don't blindly
+    //double emit valueChanged for no reason.
+    if(originalString == text()){
+
+       const long double newValue = DoubleLineEdit::value();
+
+       if(originalValue != newValue){
+
+           emit valueChanged(newValue);
+
+       }
+
+    }
 
 }
 
@@ -143,11 +165,11 @@ void DoubleLineEdit::setValue(double value){
  * This mimics Qt'isms where their widgets that have a value, normally have a callable T::value().
  * For this type it returns a decimal version of a string
  */
-double DoubleLineEdit::value(){
+long double DoubleLineEdit::value(){
 
     //Production::Note: This is what ensures we don't lose precision when scraping the decimal value
-    double summedRangeInts(sumRangeInts());
-    if(summedRangeInts >= 0.0){
+    long double summedRangeInts(sumRangeInts());
+    if(summedRangeInts >= 0.0L){
 
         summedRangeInts += m_undisplayedPrecision;
 
@@ -280,6 +302,15 @@ void DoubleLineEdit::pasteValueFromClipboard(){
         }
 
     }
+
+}
+
+/*
+ * Wraps a call to valueChanged(long double) signal
+ */
+void DoubleLineEdit::valueChangedPrivate(){
+
+    emit valueChanged(value());
 
 }
 

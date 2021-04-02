@@ -58,7 +58,7 @@ public:
         : QLineEdit                        (parent),
           m_ranges                         ({}),
           m_decimals                       (-1),
-          m_maxAllowableValue              (0),
+          m_maxAllowableValue              (0LL),
           m_prevCursorPosition             (0),
           m_incrementButton                (nullptr),
           m_decrementButton                (nullptr),
@@ -79,6 +79,7 @@ public:
         connect(this, &RangeLineEdit::cursorPositionChanged,      this, &RangeLineEdit::cursorPositionChangedEvent, Qt::DirectConnection);
         connect(this, &RangeLineEdit::selectionChanged,           this, &RangeLineEdit::selectionChangedEvent,      Qt::DirectConnection);
         connect(this, &RangeLineEdit::customContextMenuRequested, this, &RangeLineEdit::showContextMenu,            Qt::DirectConnection);
+        connect(this, &RangeLineEdit::textChanged,                this, &RangeLineEdit::valueChangedPrivate,        Qt::DirectConnection);
 
     }
 
@@ -106,15 +107,21 @@ public:
             //Generally this occurs if we're setting our type for the first time or changing our type dynamically
             if(m_decimalRange == nullptr){
 
-                m_decimalString = new RangeStringConstant(".");                
-                int prevDivisor = 1;
+                m_decimalString = new RangeStringConstant(".");
+
+                long long prevDivisor = 1LL;
                 for(int i = m_ranges.size() - 1; i >= 0; --i){
+
                     if(m_ranges.at(i)->rangeType() == "RangeInt"){
+
                         prevDivisor = m_ranges.at(i)->divisor();
                         break;
+
                     }
+
                 }
-                m_decimalRange = new RangeInt(m_decimals, std::pow(10, m_decimals) * prevDivisor);
+
+                m_decimalRange = new RangeInt(m_decimals, std::pow(10LL, m_decimals) * prevDivisor);
 
                 //Production::Note: If the final Range type in the current m_ranges list when initialized is a RangeStringConstant (i.e. a " '' "),
                 //then they are probably attempting to make the decimal apply to its closest RangeInt, so we want to pop the previous tail,
@@ -658,7 +665,7 @@ protected:
 
                 if(range->rangeType() == "RangeInt"){
 
-                    static_cast<RangeInt*>(range)->m_value = 0;
+                    static_cast<RangeInt*>(range)->m_value = 0LL;
                     range->m_dirty = true;
 
                 }
@@ -744,15 +751,21 @@ protected:
     /*
      * Returns a sum of all RangeInts' values / RangeInts' divisors, without the undisplayed precision
      */
-    double sumRangeInts(){
+    long double sumRangeInts(){
 
-        double sum(0.0);
+        long double sum(0.0L);
 
         foreach(::Range* range, m_ranges){
 
-            if(range->rangeType() == "RangeInt"){
+            if(range->rangeType() == "RangeInt" && range->divisor() > 1){
 
-                sum += static_cast<double>(static_cast<RangeInt*>(range)->m_value) / static_cast<double>(range->divisor());
+                sum += static_cast<long double>(static_cast<RangeInt*>(range)->m_value) / static_cast<long double>(range->divisor());
+
+            }
+            //Attempt to do the least amount of floating point arithmetic as possible to reduce precision loss
+            else if(range->rangeType() == "RangeInt" && range->divisor() == 1){
+
+                sum += static_cast<long double>(static_cast<RangeInt*>(range)->m_value);
 
             }
 
@@ -1054,6 +1067,15 @@ protected slots:
     virtual void pasteValueFromClipboard() = 0;
 
     /*
+     * Helper slot to overcome Qt's inability to have a templated signal or slot.
+     * This needs to be defined by the derived class and will essentially be a wrapper
+     * for what would be equivalent to:
+     *     signals:
+     *         void valueChanged(ValueType value);
+     */
+    virtual void valueChangedPrivate() = 0;
+
+    /*
      * Zeroes out all of the RangeInts
      */
     virtual void clearText(){
@@ -1082,9 +1104,9 @@ public:
     QList<::Range*> m_ranges;
 
     //This determines if m_decimalRange should exist
-    int    m_decimals;
-    int    m_maxAllowableValue;
-    int    m_prevCursorPosition;
+    int       m_decimals;
+    long long m_maxAllowableValue;
+    int       m_prevCursorPosition;
 
     QPointer<TrianglePaintedButton> m_incrementButton;
     QPointer<TrianglePaintedButton> m_decrementButton;

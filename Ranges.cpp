@@ -90,7 +90,7 @@ bool Range::allValuesToLeftAreZero(){
         //Production::Note: We don't break because we might find another, more left RangeInt
         if(rangeIter->rangeType() == "RangeInt"){
 
-            allRangeIntsToLeftAreZero &= (static_cast<RangeInt*>(rangeIter)->m_value == 0);
+            allRangeIntsToLeftAreZero &= (static_cast<RangeInt*>(rangeIter)->m_value == 0LL);
 
         }
 
@@ -229,11 +229,11 @@ QString RangeChar::rangeType(){
 }
 
 /*
- * Unused by this Range type, returns 1 no matter what
+ * Unused by this Range type, returns 1LL no matter what
  */
-int RangeChar::divisor(){
+long long RangeChar::divisor(){
 
-    return 1;
+    return 1LL;
 
 }
 
@@ -350,11 +350,11 @@ QString RangeStringConstant::rangeType(){
 
 /*
  * Unused by this Range type.
- * Always returns 1;
+ * Always returns 1LL;
  */
-int RangeStringConstant::divisor(){
+long long RangeStringConstant::divisor(){
 
-    return 1;
+    return 1LL;
 
 }
 
@@ -374,10 +374,10 @@ bool RangeStringConstant::setValueForIndex(const QChar&, int){
 /*
  * Value Constructor
  */
-RangeInt::RangeInt(int range, int divisor, bool carryOrBorrowFromLeft)
+RangeInt::RangeInt(long long range, long long divisor, bool carryOrBorrowFromLeft)
     : Range                  (),
-      m_range                (1),
-      m_value                (0),
+      m_range                (1LL),
+      m_value                (0LL),
       m_divisor              (divisor),
       m_carryOrBorrowFromLeft(carryOrBorrowFromLeft)
 {
@@ -390,11 +390,11 @@ RangeInt::RangeInt(int range, int divisor, bool carryOrBorrowFromLeft)
  * Convenience function to change the maximum value of the Range dynamically.
  * Ensures if lowering the range that the current stored value is still valid.
  */
-bool RangeInt::setRange(int range){
+bool RangeInt::setRange(long long range){
 
     bool successful(true);
 
-    if(range > 0){
+    if(range > 0LL){
 
         m_range = range;
         if(m_value > m_range){
@@ -406,7 +406,7 @@ bool RangeInt::setRange(int range){
 
     }else{
 
-        std::cerr << QString("Error. RangeInt::setRange(int range = %0) must be called with a range > 0.").arg(range).toStdString() << std::endl;
+        std::cerr << QString("Error. RangeInt::setRange(long long range = %0) must be called with a range > 0.").arg(range).toStdString() << std::endl;
         successful = false;
 
     }
@@ -419,17 +419,17 @@ bool RangeInt::setRange(int range){
  * Convenience function to change the divisor of the Range dynamically.
  * This will affect the decimal representation in the context of a PositionalLineEdit::value(...) call.
  */
-bool RangeInt::setDivisor(int divisor){
+bool RangeInt::setDivisor(long long divisor){
 
     bool successful(true);
 
-    if(divisor > 0){
+    if(divisor > 0LL){
 
         m_divisor = divisor;
 
     }else{
 
-        std::cerr << QString("Error. RangeInt::setDivisor(int divisor = %0) must be called with a divisor >= 0.").arg(divisor).toStdString() << std::endl;
+        std::cerr << QString("Error. RangeInt::setDivisor(long long divisor = %0) must be called with a divisor >= 0.").arg(divisor).toStdString() << std::endl;
         successful = false;
 
     }
@@ -443,18 +443,42 @@ bool RangeInt::setDivisor(int divisor){
  * For example, if the value is 70, but our range is 59, this will truncate the value to just set 59.
  * This will always be called before adjacent Ranges were incremented accordingly due to what this value is attempting to become.
  */
-void RangeInt::setValue(int value){
+void RangeInt::setValue(long long value){
 
     m_value = value;
-    if(m_value >= 0 && m_value > m_range){
+    if(m_value >= 0LL && m_value > m_range){
 
         m_value = m_range;
 
-    }else if(m_value <= 0 && m_value < -m_range){
+    }else if(m_value <= 0LL && m_value < -m_range){
 
         m_value = -m_range;
 
     }
+
+}
+
+/*
+ * Helper function for dealing with over and underflow
+ */
+long long safeAdd(long long a, long long b){
+
+    long long retVal = 0LL;
+    if(a > 0 && b > LLONG_MAX - a){
+
+        retVal = LLONG_MAX;
+
+    }else if (a < 0 && b < LLONG_MIN - a){
+
+        retVal = LLONG_MIN;
+
+    }else{
+
+        retVal = a + b;
+
+    }
+
+    return retVal;
 
 }
 
@@ -469,20 +493,20 @@ bool RangeInt::increment(int index){
     //This determines if we're at the "ones", "tens", "hundreds", etc. place to determine
     //what this widget will increment by
 
-    int valueToIncrementBy = std::pow(10, index);
-    int originalValue      = m_value;
+    long long valueToIncrementBy = std::pow(10LL, index);
+    long long originalValue      = m_value;
 
     //Incrementing a positive number (Should make the number diverge from 0 (i.e. 20 + 10 = 30)
-    if(m_value > 0){
+    if(m_value > 0LL){
 
-        if(m_value + valueToIncrementBy > m_range){
+        if(safeAdd(m_value, valueToIncrementBy) > m_range){
 
             if(m_leftRange != nullptr && m_carryOrBorrowFromLeft){
 
                 //If we can increment our left Range
                 if(m_leftRange->increment(0)){
 
-                    setValue(m_value + (valueToIncrementBy - m_range - 1));
+                    setValue(m_value + (valueToIncrementBy - m_range - 1LL));
 
                 }
                 //We've hit our maximum value if we couldn't increment recursively
@@ -510,10 +534,10 @@ bool RangeInt::increment(int index){
 
     }
     //Incrementing a negative number (Should make the number approach 0 (i.e. -20 + 10 = -10)
-    else if(m_value < 0){
+    else if(m_value < 0LL){
 
         //If we increment our value above 0, but we're supposed to be negative (i.e. -05 + 10 = -55 && increment the left)
-        if(m_value + valueToIncrementBy > 0){
+        if(safeAdd(m_value, valueToIncrementBy) > 0LL){
 
             //If all values to our left are zeroed out, but we can flip the RangeChar (i.e. S -> N or W -> E),
             //then our addition carry will be satisfied by the RangeChar's incrementation
@@ -528,7 +552,7 @@ bool RangeInt::increment(int index){
             else if(m_carryOrBorrowFromLeft && m_leftRange != nullptr && m_leftRange->increment(0)){
 
                 //(i.e. S01 05' -> S00 55')
-                setValue(-m_range + (valueToIncrementBy + m_value - 1));
+                setValue(-m_range + (valueToIncrementBy + m_value - 1LL));
 
             }
             //If there's no left ranges at all, attempt to treat this as a stand alone value that can be made positive
@@ -551,7 +575,7 @@ bool RangeInt::increment(int index){
     else{
 
         //If the whole value is positive, we can safely increment
-        if(leftMostRangeCharSign() == true && m_value + valueToIncrementBy < m_range){
+        if(leftMostRangeCharSign() == true && safeAdd(m_value, valueToIncrementBy) < m_range){
 
             setValue(m_value + valueToIncrementBy);
 
@@ -559,7 +583,7 @@ bool RangeInt::increment(int index){
         //If the whole value is negative (Or we're exceeding our range), we need to check if everything to our left is zeroed out or not
         else{
 
-            if(allValuesToLeftAreZero() && (m_value + valueToIncrementBy < m_range) ){
+            if(allValuesToLeftAreZero() && (safeAdd(m_value, valueToIncrementBy) < m_range) ){
 
                 //Should increment the RangeChar from its negative sign to its positive sign
                 if(leftMostRange() != nullptr && leftMostRange()->increment(0)){
@@ -573,7 +597,7 @@ bool RangeInt::increment(int index){
                 //We're actually incrementing a negative left neighboring range instead
                 if(m_carryOrBorrowFromLeft && m_leftRange != nullptr && m_leftRange->increment(0)){
 
-                    setValue(-m_range - 1 + valueToIncrementBy);
+                    setValue(-m_range - 1LL + valueToIncrementBy);
 
                 }else{
 
@@ -604,14 +628,14 @@ bool RangeInt::decrement(int index){
     //This determines if we're at the "ones", "tens", "hundreds", etc. place to determine
     //what this widget will decrement by
 
-    int valueToDecrementBy = std::pow(10, index);
-    int originalValue      = m_value;
+    long long valueToDecrementBy = std::pow(10LL, index);
+    long long originalValue      = m_value;
 
     //Decrementing a positive number (i.e. 20 - 10 = 10)
-    if(m_value > 0){
+    if(m_value > 0LL){
 
         //We're borrowing a negative from our left (if all non-zero) or the rangeChar
-        if(m_carryOrBorrowFromLeft && (m_value - valueToDecrementBy < 0) ){
+        if(m_carryOrBorrowFromLeft && (safeAdd(m_value, -valueToDecrementBy) < 0LL) ){
 
             bool flippingFromPosToNeg = allValuesToLeftAreZero() && leftMostRange() != nullptr && leftMostRange()->decrement(0);
 
@@ -622,7 +646,7 @@ bool RangeInt::decrement(int index){
             }else if(m_leftRange != nullptr && m_leftRange->decrement(0)){
 
                 //(i.e. N01 05' - 10' -> N00 55')
-                setValue(m_range - (abs(valueToDecrementBy - m_value) - 1));
+                setValue(m_range - (llabs(valueToDecrementBy - m_value) - 1LL));
 
             }else{
 
@@ -632,22 +656,22 @@ bool RangeInt::decrement(int index){
 
         }else{
 
-            setValue(m_value - valueToDecrementBy);
+            setValue(safeAdd(m_value, -valueToDecrementBy));
 
         }
 
     }
     //Decrementing a negative number (i.e. -20 - 10 = -30)
-    else if(m_value < 0){
+    else if(m_value < 0LL){
 
         //If we underflow (i.e. -55 - 10 = -05 IF we can borrow from our left)
-        if(m_value - valueToDecrementBy < -m_range){
+        if(safeAdd(m_value, -valueToDecrementBy) < -m_range){
 
             //If we can decrement the left range
             if(m_carryOrBorrowFromLeft && m_leftRange != nullptr && m_leftRange->decrement(0)){
 
                 //(i.e. -55 - 10 + 59 + 1 = -65 + 60 = -5)
-                setValue(m_value - valueToDecrementBy + m_range + 1);
+                setValue(m_value - valueToDecrementBy + m_range + 1LL);
 
             }else{
 
@@ -658,7 +682,7 @@ bool RangeInt::decrement(int index){
         }else{
 
             //(i.e. -45 - 10 = -55)
-            setValue(m_value - valueToDecrementBy);
+            setValue(safeAdd(m_value, -valueToDecrementBy));
 
         }
 
@@ -678,7 +702,7 @@ bool RangeInt::decrement(int index){
                 }
 
                 //If there is no RangeChar, then let us do it anyway and assume -m_range is our limit
-                setValue(m_value - valueToDecrementBy);
+                setValue(safeAdd(m_value, -valueToDecrementBy));
 
             }
             //Else not everything to our left is negative and we should be able to borrow from our left
@@ -687,11 +711,11 @@ bool RangeInt::decrement(int index){
                 if(m_carryOrBorrowFromLeft && m_leftRange != nullptr && m_leftRange->decrement(0)){
 
                     //(i.e. N01 00' - 10' -> N00 50')
-                    setValue(m_range - (abs(valueToDecrementBy - m_value) - 1));
+                    setValue(m_range - (llabs(valueToDecrementBy - m_value) - 1LL));
 
                 }else{
 
-                    setValue(m_value - valueToDecrementBy);
+                    setValue(safeAdd(m_value, -valueToDecrementBy));
 
                 }
 
@@ -701,7 +725,7 @@ bool RangeInt::decrement(int index){
         //Else we're negative already, so we should be able to just subtract
         else{
 
-            setValue(m_value - valueToDecrementBy);
+            setValue(safeAdd(m_value, -valueToDecrementBy));
 
         }
 
@@ -718,7 +742,7 @@ bool RangeInt::decrement(int index){
  */
 int RangeInt::valueLength(){
 
-    return QString::number(abs(m_value)).length();
+    return QString::number(llabs(m_value)).length();
 
 }
 
@@ -738,7 +762,7 @@ int RangeInt::rangeLength(){
  */
 QString RangeInt::valueStr(){
 
-    return QString("0").repeated(rangeLength() - valueLength()) + QString::number(abs(m_value));
+    return QString("0").repeated(rangeLength() - valueLength()) + QString::number(llabs(m_value));
 
 }
 
@@ -756,7 +780,7 @@ QString RangeInt::rangeType(){
  * Returns the divisor of this Range to determine this Range's true decimal value
  * in the context of a PositionalLineEdit::value(...) call
  */
-int RangeInt::divisor(){
+long long RangeInt::divisor(){
 
     return m_divisor;
 
@@ -777,9 +801,10 @@ bool RangeInt::setValueForIndex(const QChar& value, int index){
     //(i.e. value = 7 && index == 1, -> [070]
     if(QRegExp("\\d").exactMatch(value)){
 
-        int attemptedValue = valueStr().replace(index, 1, value).toInt() * (m_value >= 0 ? 1 : -1);
+        bool success(false);
+        long long attemptedValue = valueStr().replace(index, 1, value).toLongLong(&success) * (m_value >= 0LL ? 1LL : -1LL);
 
-        if(fabs(attemptedValue) <= m_range){
+        if(success && llabs(attemptedValue) <= m_range){
 
             m_value = attemptedValue;
             m_dirty = true;
