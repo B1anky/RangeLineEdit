@@ -1,4 +1,7 @@
 # RangeLineEdit
+
+Note: Requires a compiler capable of compiling with C++14 or higher
+
 Qt QLineEdit subclass and formatting engine to create any type of restricted RegEx for numbers and characters that can be flexibly used. 
 My example creates a Latitude and Longitude LineEdit validator.
 This can technically be expanded for any use case, including a phone number validator, for example.

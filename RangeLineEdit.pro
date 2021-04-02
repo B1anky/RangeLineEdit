@@ -2,7 +2,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++11
+CONFIG += c++14
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -12,6 +12,7 @@ SOURCES += \
     DoubleLineEdit.cpp \
     LatitudeLineEdit.cpp \
     LongitudeLineEdit.cpp \
+    PhoneNumberLineEdit.cpp \
     PositionalLineEdit.cpp \
     Ranges.cpp \
     TrianglePaintedButton.cpp \
@@ -23,6 +24,7 @@ HEADERS += \
     LatitudeLineEdit.h \
     LongitudeLineEdit.h \
     MainWindow.h \
+    PhoneNumberLineEdit.h \
     PositionalLineEdit.h \
     RangeLineEdit.h \
     Ranges.h \

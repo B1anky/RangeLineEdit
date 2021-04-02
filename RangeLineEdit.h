@@ -161,7 +161,7 @@ public:
             Range* currentTail = nullptr;
             m_decimals = decimals;
 
-            //Pop the trailing String Constant (if applicable), the decimal Range, and the decimal String Constant
+            //Pop the Seconds String Constant, the decimal Range, and the decimal String Constant
             if(m_ranges.isEmpty() == false && m_ranges.last()->rangeType() == "RangeStringConstant"){
 
                 currentTail = m_ranges.last();
@@ -178,7 +178,6 @@ public:
             m_decimalString = nullptr;
             m_decimalRange  = nullptr;
 
-            //Reappend the previous Range String Constant back on
             if(currentTail != nullptr){
 
                 m_ranges << currentTail;
@@ -650,8 +649,10 @@ protected:
     /*
      * Helper function that ensures any changes to the value of a Range will not exceed the maximum allowable set value.
      * If the maximum is exceeded, the first-most RangeInt will be set to its range and all subsequent RangeInts will be zeroed out.
+     * Production::Note: Leverages SFINAE to compile this out for non-arithmetic types
      */
-    virtual void maximumExceededFixup(){
+    template <typename T = ValueType, typename std::enable_if_t<std::is_arithmetic<T>::value>* = nullptr>
+    void maximumExceededFixup(){
 
         //Assume false and prove otherwise
         bool atOrExceedsValue(false);
@@ -699,6 +700,18 @@ protected:
             setCursorPosition(focusIndex);
 
         }
+
+    }
+
+    /*
+     * Helper function that ensures any changes to the value of a Range will not exceed the maximum allowable set value.
+     * If the maximum is exceeded, the first-most RangeInt will be set to its range and all subsequent RangeInts will be zeroed out.
+     * Production::Note: Leverages SFINAE to compile this in for non-arithmetic types
+     */
+    template <typename T=ValueType, typename std::enable_if_t<!std::is_arithmetic<T>::value>* = nullptr>
+    void maximumExceededFixup(){
+
+        /* NOP */
 
     }
 

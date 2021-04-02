@@ -16,11 +16,14 @@ public:
 
     void setupDoubleWidget();
 
+    void setupPhoneWidget();
+
     ~MainWindow();
 
     QTabWidget* m_tabWidget;
     QWidget*    m_dmsWidget;
     QWidget*    m_doubleWidget;
+    QWidget*    m_phoneWidget;
 
 };
 

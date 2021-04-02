@@ -2,12 +2,11 @@
 #include "LatitudeLineEdit.h"
 #include "LongitudeLineEdit.h"
 #include "DoubleLineEdit.h"
+#include "PhoneNumberLineEdit.h"
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QLabel>
-
-#include <limits>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -18,6 +17,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     setupDMSWidget();
     setupDoubleWidget();
+    setupPhoneWidget();
 
 }
 
@@ -180,6 +180,52 @@ void MainWindow::setupDoubleWidget(){
     }, Qt::DirectConnection);
 
     m_tabWidget->addTab(m_doubleWidget, "Double");
+
+}
+
+void MainWindow::setupPhoneWidget(){
+
+    m_phoneWidget = new QWidget;
+
+    QVBoxLayout* centralVLayout = new QVBoxLayout;
+    m_phoneWidget->setLayout(centralVLayout);
+
+    QHBoxLayout*         lineEditLayout               = new QHBoxLayout;
+    PhoneNumberLineEdit* phoneNumberLineEdit          = new PhoneNumberLineEdit(nullptr, true, 1);
+    PhoneNumberLineEdit* phoneNumberLineEditEditError = new PhoneNumberLineEdit(nullptr);
+    lineEditLayout->addWidget(phoneNumberLineEdit);
+    lineEditLayout->addWidget(phoneNumberLineEditEditError);
+    centralVLayout->addLayout(lineEditLayout);
+
+    QHBoxLayout* phoneLabelLayout                  = new QHBoxLayout;
+    QLabel*      phoneNumberLineEditLabel          = new QLabel;
+    QLabel*      phoneNumberLineEditLabelSecondary = new QLabel;
+
+    phoneLabelLayout->addWidget(phoneNumberLineEditLabel);
+    phoneLabelLayout->addWidget(phoneNumberLineEditLabelSecondary);
+    centralVLayout  ->addLayout(phoneLabelLayout);
+
+    QHBoxLayout* setValueLayout              = new QHBoxLayout;
+    QPushButton* setPhoneNumberFromIntButton = new QPushButton("Set Phone Number");
+    QSpinBox*    intSpinBox                  = new QSpinBox;
+
+    intSpinBox->setRange(0, phoneNumberLineEdit->m_maxAllowableValue);
+
+    setValueLayout->addWidget(setPhoneNumberFromIntButton);
+    setValueLayout->addWidget(intSpinBox);
+    centralVLayout->addLayout(setValueLayout);
+
+    connect(setPhoneNumberFromIntButton, &QPushButton::clicked, this, [this, phoneNumberLineEdit, intSpinBox](){
+        phoneNumberLineEdit->setValue(QString::number(intSpinBox->value()));
+    }, Qt::DirectConnection);
+
+    connect(phoneNumberLineEdit, &PhoneNumberLineEdit::valueChanged, this, [this, phoneNumberLineEdit, phoneNumberLineEditLabel, phoneNumberLineEditEditError](){
+        qDebug() << phoneNumberLineEdit->value();
+        phoneNumberLineEditLabel->setText(phoneNumberLineEdit->value());
+        phoneNumberLineEditEditError->setValue(phoneNumberLineEdit->value());
+    }, Qt::DirectConnection);
+
+    m_tabWidget->addTab(m_phoneWidget, "Phone Numbers");
 
 }
 

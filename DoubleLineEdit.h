@@ -72,7 +72,7 @@ protected:
      * Helper function that ensures any changes to the value of a Range will not exceed the maximum allowable set value.
      * If the maximum is exceeded, the first-most RangeInt will be set to its range and all subsequent RangeInts will be zeroed out.
      */
-    void maximumExceededFixup() override;
+    void maximumExceededFixup();
 
 protected slots:
 
