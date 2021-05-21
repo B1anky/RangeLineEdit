@@ -309,8 +309,9 @@ struct RangeInt : public Range{
      * @PARAM long long divisor               - The divisor of the Range that will divide the stored state's value to be used to construct the
      *                                          decimal representation of this Range in the context of a PositionalLineEdit::value(...) call
      * @PARAM bool      carryOrBorrowFromLeft - This will determine if this RangeInt will attempt to increment its neighbor, versus just remianing at its maximum value
+     * @PARAM bool      isSigned              - Whether or not it can be decremented or set to a value less than 0.0
      */
-    RangeInt(long long range, long long divisor, bool carryOrBorrowFromLeft = true);
+    RangeInt(long long range, long long divisor, bool carryOrBorrowFromLeft = true, bool isSigned = true);
 
     /*
      * Convenience function to change the maximum value of the Range dynamically.
@@ -393,6 +394,7 @@ struct RangeInt : public Range{
     long long  m_value;
     long long  m_divisor;
     bool       m_carryOrBorrowFromLeft;
+    bool       m_signed;
 
 };
 

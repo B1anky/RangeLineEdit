@@ -374,12 +374,13 @@ bool RangeStringConstant::setValueForIndex(const QChar&, int){
 /*
  * Value Constructor
  */
-RangeInt::RangeInt(long long range, long long divisor, bool carryOrBorrowFromLeft)
+RangeInt::RangeInt(long long range, long long divisor, bool carryOrBorrowFromLeft, bool isSigned)
     : Range                  (),
       m_range                (1LL),
       m_value                (0LL),
       m_divisor              (divisor),
-      m_carryOrBorrowFromLeft(carryOrBorrowFromLeft)
+      m_carryOrBorrowFromLeft(carryOrBorrowFromLeft),
+      m_signed               (isSigned)
 {
 
     setRange(range);
@@ -446,6 +447,14 @@ bool RangeInt::setDivisor(long long divisor){
 void RangeInt::setValue(long long value){
 
     m_value = value;
+
+    //If it's unsigned and less than 0, then 0 it out
+    if(m_signed == false && m_value < 0LL){
+
+        m_value = 0LL;
+
+    }
+
     if(m_value >= 0LL && m_value > m_range){
 
         m_value = m_range;

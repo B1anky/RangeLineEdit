@@ -22,21 +22,28 @@
 /*
  * Value Constructor
  */
-DoubleLineEdit::DoubleLineEdit(QWidget* parent, int decimals)
+DoubleLineEdit::DoubleLineEdit(QWidget* parent, int decimals, bool isSigned)
     : RangeLineEdit         (parent),
       m_undisplayedPrecision(0.0),
+      m_signed              (isSigned),
       m_signChar            (nullptr),
       m_doubleInt           (nullptr)
 {
 
-    m_signChar  = new RangeChar('-', '+');
+    if(m_signed){
+
+        m_signChar  = new RangeChar('-', '+');
+        m_ranges << m_signChar;
+
+    }
+
     //Production::Note: Can only truly represent from long long -> long double the following range with 16 significant figures.
     //This causes us to have to give up significant figures to the left of the decimal by a factor of 10 for each decimal more we want
     //to represent. If we were to not do this, and we made a Range close to long long max with values to the right of the decimal,
     //it may be completely disregarded due to the amount of gauranteed precision being invalidated by having >16 bits.
-    m_doubleInt = new RangeInt(std::numeric_limits<long long>::max() / (100000LL * std::pow(10LL, decimals + 1) ), 1LL);
+    m_doubleInt = new RangeInt(std::numeric_limits<long long>::max() / (100000LL * std::pow(10LL, decimals + 1) ), 1LL, true, m_signed);
 
-    m_ranges << m_signChar << m_doubleInt;
+    m_ranges << m_doubleInt;
     m_prevCursorPosition = 0;
     syncRangeEdges();
 
@@ -92,8 +99,18 @@ void DoubleLineEdit::setValue(long double value){
 
     const long double originalValue = DoubleLineEdit::value();
 
-    QChar signChar = value >= 0 ? m_signChar->m_positiveChar : m_signChar->m_negativeChar;
-    m_signChar->m_value = signChar;
+    if(m_signed){
+
+        QChar signChar = value >= 0 ? m_signChar->m_positiveChar : m_signChar->m_negativeChar;
+        m_signChar->m_value = signChar;
+
+        if(value < 0.0){
+
+            value = 0.0;
+
+        }
+
+    }
 
     value = std::fabs(value);
 

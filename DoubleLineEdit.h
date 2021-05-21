@@ -19,8 +19,9 @@ public:
      * Value Constructor
      * @PARAM QWidget* parent   - Standard Qt parenting mechanism for memory management
      * @PARAM int      decimals - The amount of precision the user wishes to display (This does not affect stored precision)
+     * @PARAM bool     isSigned - Whether or not to display the ('+' | '-') characters
      */
-    DoubleLineEdit(QWidget* parent = nullptr, int decimals = 2);
+    DoubleLineEdit(QWidget* parent = nullptr, int decimals = 2, bool isSigned = true);
 
     /*
      * Convenience function for dynamically changing the precision of the decimals.
@@ -114,6 +115,8 @@ signals:
 public:
 
     long double m_undisplayedPrecision;
+
+    bool m_signed;
 
     RangeChar* m_signChar;
     RangeInt*  m_doubleInt;
